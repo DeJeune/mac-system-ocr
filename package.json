@@ -6,7 +6,7 @@
     "types": "lib/index.d.ts",
     "files": [
         "lib/**/*",
-        "build/Release/*",
+        "src/**/*",
         "binding.gyp"
     ],
     "scripts": {
@@ -28,7 +28,7 @@
     "license": "MIT",
     "gypfile": true,
     "engines": {
-        "node": ">=14.0.0",
+        "node": ">=22.0.0 <24.0.0",
         "os": "darwin"
     },
     "dependencies": {
