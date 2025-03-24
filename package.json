@@ -6,7 +6,8 @@
     "types": "src/index.d.ts",
     "files": [
         "src/**/*",
-        "binding.gyp"
+        "binding.gyp",
+        "lib/**/*"
     ],
     "scripts": {
         "build": "node-gyp rebuild",
