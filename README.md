@@ -27,7 +27,7 @@ npm install mac-system-ocr
 ## Quick Start
 
 ```typescript
-import { MacOCR } from 'mac-system-ocr';
+import MacOCR from 'mac-system-ocr';
 
 // Basic usage
 async function recognizeText() {
