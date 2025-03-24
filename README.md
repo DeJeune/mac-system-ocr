@@ -42,8 +42,9 @@ async function recognizeText() {
 // With options
 async function recognizeWithOptions() {
   const options = {
-    languages: ['en-US', 'zh-Hans'], // Specify recognition languages
-    fast: true,                      // Use fast recognition mode
+    languages: 'en-US, zh-Hans', // Specify recognition languages
+    recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
+    minConfidence: 0.5,
   };
   
   const text = await MacOCR.recognize('path/to/your/image.jpg', options);
