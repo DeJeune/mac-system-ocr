@@ -1,0 +1,129 @@
+# Mac OCR Native Node.js Module
+
+A high-performance OCR (Optical Character Recognition) Node.js native module powered by macOS Vision Framework. This module provides fast and accurate text recognition capabilities for various image formats.
+
+[![npm version](https://badge.fury.io/js/mac-ocr.svg)](https://badge.fury.io/js/mac-ocr)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Features
+
+- 🚀 Native performance using macOS Vision Framework
+- 🖼️ Support for multiple image formats
+- 🌍 Multi-language text recognition
+- ⚡️ Promise-based async API
+
+## Requirements
+
+- macOS 10.15 or later
+- Node.js 23.0.0 or later (maybe support former version, but not tested)
+- Xcode Command Line Tools
+
+## Installation
+
+```bash
+npm install mac-system-ocr
+```
+
+## Quick Start
+
+```typescript
+import { MacOCR } from 'mac-system-ocr';
+
+// Basic usage
+async function recognizeText() {
+  try {
+    const text = await MacOCR.recognize('path/to/your/image.png');
+    console.log('Recognized text:', text);
+  } catch (error) {
+    console.error('OCR failed:', error);
+  }
+}
+
+// With options
+async function recognizeWithOptions() {
+  const options = {
+    languages: ['en-US', 'zh-Hans'], // Specify recognition languages
+    fast: true,                      // Use fast recognition mode
+  };
+  
+  const text = await MacOCR.recognize('path/to/your/image.jpg', options);
+  console.log('Recognized text:', text);
+}
+```
+
+## API Reference
+
+### `MacOCR.recognize(imagePath: string, options?: OCROptions): Promise<string>`
+
+Performs OCR on the specified image file and returns the recognized text.
+
+#### Parameters
+
+- `imagePath` (string): Path to the image file
+- `options` (optional): Configuration object for OCR
+
+#### OCROptions
+
+```typescript
+interface OCROptions {
+  languages?: string[];     // Recognition languages (default: ['en-US'])
+  fast?: boolean;          // Use fast recognition mode (default: false)
+  correction?: boolean;    // Enable automatic correction (default: true)
+}
+```
+
+#### Supported Languages
+
+- `en-US`: English
+- `zh-Hans`: Simplified Chinese
+- `zh-Hant`: Traditional Chinese
+- `ja-JP`: Japanese
+- And more...
+
+#### Returns
+
+Returns a Promise that resolves with the recognized text string.
+
+#### Errors
+
+The following errors may be thrown:
+- `FileNotFoundError`: Image file does not exist
+- `InvalidFormatError`: Unsupported image format
+- `OCRError`: Recognition failed
+
+## Examples
+
+### Basic Text Recognition
+
+```typescript
+import { MacOCR } from 'mac-ocr';
+
+const text = await MacOCR.recognize('screenshot.png');
+console.log(text);
+```
+
+### Multi-language Recognition
+
+```typescript
+import { MacOCR } from 'mac-ocr';
+
+const text = await MacOCR.recognize('document.jpg', {
+  languages: ['en-US', 'zh-Hans'],
+  fast: false
+});
+console.log(text);
+```
+
+## Performance Tips
+
+- Use `fast: true` option for faster recognition when accuracy is less critical
+- JPEG and PNG formats are recommended for best performance
+- Ensure images have good contrast and resolution for optimal results
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT License - see the [LICENSE](LICENSE) file for details.

@@ -1,0 +1,1 @@
+cmd_Release/mac_ocr.node := c++ -bundle -framework Vision -framework Foundation -undefined dynamic_lookup -Wl,-search_paths_first -mmacosx-version-min=10.15 -arch arm64 -L./Release -stdlib=libc++  -o Release/mac_ocr.node Release/obj.target/mac_ocr/src/binding.o Release/obj.target/mac_ocr/src/ocr.o 
