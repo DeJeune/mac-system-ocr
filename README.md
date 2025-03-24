@@ -24,6 +24,15 @@ A high-performance OCR (Optical Character Recognition) Node.js native module pow
 npm install mac-system-ocr
 ```
 
+## Development
+
+```bash
+git clone https://github.com/DeJeune/mac-system-ocr.git
+cd mac-system-ocr
+npm install
+npm run build
+```
+
 ## Quick Start
 
 ```typescript
