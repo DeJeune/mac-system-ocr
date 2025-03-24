@@ -30,6 +30,11 @@ jobs:
       
       - name: Build project
         run: npm run build
+      
+      - name: Create Release
+        run: npm pack
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
   create-release:
     name: Create GitHub Release
@@ -45,21 +50,11 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
       
-      - name: Generate changelog
-        id: changelog
-        uses: metcalfc/changelog-generator@v4.5.0
-        with:
-          myToken: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
+        uses: softprops/action-gh-release@v2
+        with:     
           name: Release ${{ steps.get_version.outputs.VERSION }}
-          body: |
-            ## Version ${{ steps.get_version.outputs.VERSION }} ChangeLog
-            
-            ${{ steps.changelog.outputs.changelog }}
+          files: mac-system-ocr-*.tgz
           draft: false
           prerelease: false
         env:
