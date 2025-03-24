@@ -2,7 +2,7 @@
 
 A high-performance OCR (Optical Character Recognition) Node.js native module powered by macOS Vision Framework. This module provides fast and accurate text recognition capabilities for various image formats.
 
-[![npm version](https://badge.fury.io/js/mac-system-ocr.svg)](https://badge.fury.io/js/mac-system-ocr)
+[![npm version](https://badge.fury.io/js/mac-system-ocr.svg)](https://badge.fury.io/js/mac-system-ocr.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
