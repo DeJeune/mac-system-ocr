@@ -41,7 +41,7 @@
     "bugs": {
         "url": "https://github.com/DeJeune/mac-system-ocr/issues"
     },
-    "homepage": "https://github.com/yourusername/mac-system-ocr#readme",
+    "homepage": "https://github.com/DeJeune/mac-system-ocr#readme",
     "dependencies": {
         "bindings": "^1.5.0",
         "node-api-headers": "^1.0.1"
