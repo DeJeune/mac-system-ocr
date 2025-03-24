@@ -2,7 +2,7 @@
 
 A high-performance OCR (Optical Character Recognition) Node.js native module powered by macOS Vision Framework. This module provides fast and accurate text recognition capabilities for various image formats.
 
-[![npm version](https://badge.fury.io/js/mac-ocr.svg)](https://badge.fury.io/js/mac-ocr)
+[![npm version](https://badge.fury.io/js/mac-system-ocr.svg)](https://badge.fury.io/js/mac-system-ocr)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
@@ -65,10 +65,10 @@ Performs OCR on the specified image file and returns the recognized text.
 #### OCROptions
 
 ```typescript
-interface OCROptions {
-  languages?: string[];     // Recognition languages (default: ['en-US'])
-  fast?: boolean;          // Use fast recognition mode (default: false)
-  correction?: boolean;    // Enable automatic correction (default: true)
+interface RecognizeOptions {
+  languages?: string; // Recognition languages, multiple languages separated by commas (default: 'en-US')
+  recognitionLevel?: typeof MacOCR.RECOGNITION_LEVEL_FAST | typeof MacOCR.RECOGNITION_LEVEL_ACCURATE; // Use fast recognition mode  or accurate recognition mode
+  minConfidence?: number;  // Minimum confidence score (default: 0.0)
 }
 ```
 
@@ -96,7 +96,7 @@ The following errors may be thrown:
 ### Basic Text Recognition
 
 ```typescript
-import { MacOCR } from 'mac-ocr';
+import { MacOCR } from 'mac-system-ocr';
 
 const text = await MacOCR.recognize('screenshot.png');
 console.log(text);
@@ -105,18 +105,19 @@ console.log(text);
 ### Multi-language Recognition
 
 ```typescript
-import { MacOCR } from 'mac-ocr';
+import { MacOCR } from 'mac-system-ocr';
 
 const text = await MacOCR.recognize('document.jpg', {
   languages: ['en-US', 'zh-Hans'],
-  fast: false
+  recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
+  minConfidence: 0.5,
 });
 console.log(text);
 ```
 
 ## Performance Tips
 
-- Use `fast: true` option for faster recognition when accuracy is less critical
+- Use `recognitionLevel: 1` option for accurate recognition
 - JPEG and PNG formats are recommended for best performance
 - Ensure images have good contrast and resolution for optimal results
 
