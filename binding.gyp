@@ -1,9 +1,9 @@
 {
     "targets": [{
-        "target_name": "mac_ocr",
+        "target_name": "mac_system_ocr",
         "sources": [
-            "src/binding.c",
-            "src/ocr.mm"
+            "lib/binding.c",
+            "lib/ocr.mm"
         ],
         "include_dirs": [
             "<!@(node -p \"require('node-api-headers').include\")"

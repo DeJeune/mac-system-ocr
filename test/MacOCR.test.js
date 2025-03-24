@@ -1,4 +1,4 @@
-const MacOCR = require('../lib/index');
+const MacOCR = require('../src/index');
 const path = require('path');
 const fs = require('fs');
 const { createTestImage } = require('./createTestImage');
@@ -169,8 +169,7 @@ describe('MacOCR', () => {
       
       expect(Array.isArray(results)).toBe(true);
       if (!Array.isArray(results)) {
-        
-        
+        console.error('results is not an array', results);
       }
       
       expect(results.length).toBe(testImagePaths.length);

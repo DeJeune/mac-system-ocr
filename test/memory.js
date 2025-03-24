@@ -1,5 +1,5 @@
-// test/memory.js
-const MacOCR = require('../lib');
+// Test/memory.js
+const MacOCR = require('../src/index');
 const v8 = require('v8');
 
 function formatBytes(bytes) {

@@ -1,7 +1,6 @@
-// test/performance.js
-const MacOCR = require('../lib');
+// Test/performance.js
+const MacOCR = require('../src/index');
 const { performance } = require('perf_hooks');
-const path = require('path');
 const fs = require('fs').promises;
 
 async function measurePerformance(filePath) {

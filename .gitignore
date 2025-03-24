@@ -3,3 +3,9 @@ build
 coverage
 dist
 output
+*.log
+.DS_Store
+*.tgz
+.env
+.vscode
+.idea

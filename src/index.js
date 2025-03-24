@@ -1,4 +1,4 @@
-const { recognize, recognizeBatch } = require('bindings')('mac_ocr');
+const { recognize, recognizeBatch } = require('bindings')('mac_system_ocr');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -13,7 +13,7 @@ if (platform !== 'darwin') {
 
 // Parse macOS version (e.g., "19.0.0" -> 10.15)
 const majorVersion = parseInt(release.split('.')[0], 10);
-if (majorVersion < 19) { // macOS 10.15 (Catalina) corresponds to Darwin 19.0.0
+if (majorVersion < 19) { // MacOS 10.15 (Catalina) corresponds to Darwin 19.0.0
   throw new Error('This module requires macOS 10.15 (Catalina) or higher');
 }
 

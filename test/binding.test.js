@@ -1,4 +1,4 @@
-const { recognize } = require('bindings')('mac_ocr');
+const { recognize } = require('bindings')('mac_system_ocr');
 const path = require('path');
 const fs = require('fs');
 const { createTestImage } = require('./createTestImage');
@@ -61,7 +61,7 @@ describe('Native Binding', () => {
     expect(fs.existsSync(testImagePath)).toBe(true);
     const options = {
       languages: 'en-US',
-      recognitionLevel: 1, // accurate
+      recognitionLevel: 1, // Accurate
       minConfidence: 0.0
     };
 
@@ -123,7 +123,7 @@ describe('Native Binding', () => {
 
     const fastResult = await recognize(testImagePath, {
       languages: 'en-US',
-      recognitionLevel: 0, // fast
+      recognitionLevel: 0, // Fast
       minConfidence: 0.0
     });
     expect(fastResult).toBeDefined();
@@ -133,7 +133,7 @@ describe('Native Binding', () => {
 
     const accurateResult = await recognize(testImagePath, {
       languages: 'en-US',
-      recognitionLevel: 1, // accurate
+      recognitionLevel: 1, // Accurate
       minConfidence: 0.0
     });
     expect(accurateResult).toBeDefined();
@@ -146,7 +146,7 @@ describe('Native Binding', () => {
     const options = {
       languages: 'en-US',
       recognitionLevel: 1,
-      minConfidence: 0.8 // high confidence threshold
+      minConfidence: 0.8 // High confidence threshold
     };
 
     const result = await recognize(testImagePath, options);
