@@ -8,43 +8,30 @@ on:
 permissions:
   contents: write
 
-jobs:
-  build:
-    name: Build and Test
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run tests
-        run: npm test
-      
-      - name: Build project
-        run: npm run build
-      
-      - name: Create Release
-        run: npm pack
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
+jobs:        
   create-release:
     name: Create GitHub Release
-    needs: build
     runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Create package
+        run: npm pack
       
       - name: Get version from tag
         id: get_version
@@ -54,7 +41,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:     
           name: Release ${{ steps.get_version.outputs.VERSION }}
-          files: mac-system-ocr-*.tgz
+          files: cherrystudio-mac-system-ocr-*.tgz
           draft: false
           prerelease: false
         env:
@@ -71,13 +58,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           registry-url: 'https://registry.npmjs.org'
       
       - name: Install dependencies
         run: npm ci
       
       - name: Publish to NPM
-        run: npm publish
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
