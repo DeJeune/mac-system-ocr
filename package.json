@@ -1,6 +1,6 @@
 {
     "name": "@cherrystudio/mac-system-ocr",
-    "version": "0.0.3",
+    "version": "0.1.0",
     "description": "Node.js N-API native module for MacOS Vision Framework OCR",
     "main": "src/index.js",
     "types": "src/index.d.ts",
