@@ -122,7 +122,7 @@ console.log(text);
 import { MacOCR } from '@cherrystudio/mac-system-ocr';
 
 const text = await MacOCR.recognizeFromPath('document.jpg', {
-  languages: ['en-US', 'zh-Hans'],
+  languages: 'en-US, zh-Hans',
   recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
   minConfidence: 0.5,
 });
