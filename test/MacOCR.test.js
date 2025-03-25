@@ -65,39 +65,39 @@ describe('MacOCR', () => {
 
   describe('recognize()', () => {
     test('should throw TypeError for non-string image path', async () => {
-      await expect(MacOCR.recognize(123)).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognize(null)).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognize(undefined)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeFromPath(123)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeFromPath(null)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeFromPath(undefined)).rejects.toThrow(TypeError);
     });
 
     test('should throw Error for non-existent image file', async () => {
-      await expect(MacOCR.recognize('nonexistent.jpg')).rejects.toThrow('Image file does not exist');
+      await expect(MacOCR.recognizeFromPath('nonexistent.jpg')).rejects.toThrow('Image file does not exist');
     });
 
     test('should throw Error for unsupported image format', async () => {
       const badFileName = path.join(fixturesDir, `bad-format-${uuidv4()}.xyz`);
       await fs.promises.writeFile(badFileName, 'dummy content');
-      await expect(MacOCR.recognize(badFileName)).rejects.toThrow('Unsupported image format');
+      await expect(MacOCR.recognizeFromPath(badFileName)).rejects.toThrow('Unsupported image format');
       await fs.promises.unlink(badFileName);
     });
 
     test('should throw Error for invalid recognition level', async () => {
       expect(fs.existsSync(testImagePath)).toBe(true);
-      await expect(MacOCR.recognize(testImagePath, { recognitionLevel: 999 }))
+      await expect(MacOCR.recognizeFromPath(testImagePath, { recognitionLevel: 999 }))
         .rejects.toThrow('Recognition level must be MacOCR.RECOGNITION_LEVEL_FAST or MacOCR.RECOGNITION_LEVEL_ACCURATE');
     });
 
     test('should throw Error for invalid confidence threshold', async () => {
       expect(fs.existsSync(testImagePath)).toBe(true);
-      await expect(MacOCR.recognize(testImagePath, { minConfidence: -1 }))
+      await expect(MacOCR.recognizeFromPath(testImagePath, { minConfidence: -1 }))
         .rejects.toThrow('Minimum confidence must be between 0.0 and 1.0');
-      await expect(MacOCR.recognize(testImagePath, { minConfidence: 1.5 }))
+      await expect(MacOCR.recognizeFromPath(testImagePath, { minConfidence: 1.5 }))
         .rejects.toThrow('Minimum confidence must be between 0.0 and 1.0');
     });
 
     test('should perform OCR with default options', async () => {
       expect(fs.existsSync(testImagePath)).toBe(true);
-      const result = await MacOCR.recognize(testImagePath);
+      const result = await MacOCR.recognizeFromPath(testImagePath);
       expect(result).toHaveProperty('text');
       expect(result).toHaveProperty('confidence');
       expect(typeof result.text).toBe('string');
@@ -113,7 +113,7 @@ describe('MacOCR', () => {
         recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
         minConfidence: 0.5
       };
-      const result = await MacOCR.recognize(testImagePath, options);
+      const result = await MacOCR.recognizeFromPath(testImagePath, options);
       expect(result).toHaveProperty('text');
       expect(result).toHaveProperty('confidence');
       expect(result.confidence).toBeGreaterThanOrEqual(0.5);
@@ -148,24 +148,24 @@ describe('MacOCR', () => {
     });
 
     test('should throw TypeError for non-array image paths', async () => {
-      await expect(MacOCR.recognizeBatch('not-an-array')).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognizeBatch(123)).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognizeBatch(null)).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognizeBatch(undefined)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeBatchFromPath('not-an-array')).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeBatchFromPath(123)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeBatchFromPath(null)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeBatchFromPath(undefined)).rejects.toThrow(TypeError);
     });
 
     test('should throw Error for empty array of image paths', async () => {
-      await expect(MacOCR.recognizeBatch([])).rejects.toThrow('Image paths array cannot be empty');
+      await expect(MacOCR.recognizeBatchFromPath([])).rejects.toThrow('Image paths array cannot be empty');
     });
 
     test('should throw Error if any image in batch does not exist', async () => {
       const paths = [...testImagePaths, 'nonexistent.jpg'];
-      await expect(MacOCR.recognizeBatch(paths)).rejects.toThrow();
+      await expect(MacOCR.recognizeBatchFromPath(paths)).rejects.toThrow();
     });
 
     test('should perform batch OCR with default options', async () => {
       
-      const results = await MacOCR.recognizeBatch(testImagePaths);
+      const results = await MacOCR.recognizeBatchFromPath(testImagePaths);
       
       
       expect(Array.isArray(results)).toBe(true);
@@ -197,7 +197,7 @@ describe('MacOCR', () => {
         batchSize: 2
       };
 
-      const results = await MacOCR.recognizeBatch(testImagePaths, options);
+      const results = await MacOCR.recognizeBatchFromPath(testImagePaths, options);
       expect(Array.isArray(results)).toBe(true);
       expect(results.length).toBe(testImagePaths.length);
 
@@ -213,7 +213,7 @@ describe('MacOCR', () => {
         maxThreads: -1,
         batchSize: 0
       };
-      await expect(MacOCR.recognizeBatch(testImagePaths, invalidOptions))
+      await expect(MacOCR.recognizeBatchFromPath(testImagePaths, invalidOptions))
         .rejects.toThrow();
     });
 
@@ -234,7 +234,7 @@ describe('MacOCR', () => {
           batchSize: 3
         };
 
-        const results = await MacOCR.recognizeBatch(largeBatchPaths, options);
+        const results = await MacOCR.recognizeBatchFromPath(largeBatchPaths, options);
         expect(Array.isArray(results)).toBe(true);
         expect(results.length).toBe(largeImageCount);
 
@@ -269,17 +269,17 @@ describe('MacOCR', () => {
     });
 
     test('should throw TypeError for invalid input types', async () => {
-      await expect(MacOCR.recognizeBuffer(null)).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognizeBuffer(undefined)).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognizeBuffer({})).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognizeBuffer('not-a-buffer')).rejects.toThrow(TypeError);
-      await expect(MacOCR.recognizeBuffer(123)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeFromBuffer(null)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeFromBuffer(undefined)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeFromBuffer({})).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeFromBuffer('not-a-buffer')).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeFromBuffer(123)).rejects.toThrow(TypeError);
     });
 
     test('should accept Uint8Array as input', async () => {
       // Convert Buffer to Uint8Array
       const uint8Array = new Uint8Array(testImageBuffer);
-      const result = await MacOCR.recognizeBuffer(uint8Array);
+      const result = await MacOCR.recognizeFromBuffer(uint8Array);
       
       expect(result).toHaveProperty('text');
       expect(result).toHaveProperty('confidence');
@@ -291,28 +291,28 @@ describe('MacOCR', () => {
     });
 
     test('should throw Error for invalid image data', async () => {
-      await expect(MacOCR.recognizeBuffer(Buffer.alloc(10))).rejects.toThrow(Error);
-      await expect(MacOCR.recognizeBuffer(new Uint8Array(10))).rejects.toThrow(Error);
+      await expect(MacOCR.recognizeFromBuffer(Buffer.alloc(10))).rejects.toThrow(Error);
+      await expect(MacOCR.recognizeFromBuffer(new Uint8Array(10))).rejects.toThrow(Error);
     });
 
     test('should throw Error for empty buffer', async () => {
-      await expect(MacOCR.recognizeBuffer(Buffer.alloc(0))).rejects.toThrow('Image buffer cannot be empty');
+      await expect(MacOCR.recognizeFromBuffer(Buffer.alloc(0))).rejects.toThrow('Image buffer cannot be empty');
     });
 
     test('should throw Error for invalid recognition level', async () => {
-      await expect(MacOCR.recognizeBuffer(testImageBuffer, { recognitionLevel: 999 }))
+      await expect(MacOCR.recognizeFromBuffer(testImageBuffer, { recognitionLevel: 999 }))
         .rejects.toThrow('Recognition level must be MacOCR.RECOGNITION_LEVEL_FAST or MacOCR.RECOGNITION_LEVEL_ACCURATE');
     });
 
     test('should throw Error for invalid confidence threshold', async () => {
-      await expect(MacOCR.recognizeBuffer(testImageBuffer, { minConfidence: -1 }))
+      await expect(MacOCR.recognizeFromBuffer(testImageBuffer, { minConfidence: -1 }))
         .rejects.toThrow('Minimum confidence must be between 0.0 and 1.0');
-      await expect(MacOCR.recognizeBuffer(testImageBuffer, { minConfidence: 1.5 }))
+      await expect(MacOCR.recognizeFromBuffer(testImageBuffer, { minConfidence: 1.5 }))
         .rejects.toThrow('Minimum confidence must be between 0.0 and 1.0');
     });
 
     test('should perform OCR with default options', async () => {
-      const result = await MacOCR.recognizeBuffer(testImageBuffer);
+      const result = await MacOCR.recognizeFromBuffer(testImageBuffer);
       expect(result).toHaveProperty('text');
       expect(result).toHaveProperty('confidence');
       expect(typeof result.text).toBe('string');
@@ -328,7 +328,7 @@ describe('MacOCR', () => {
         recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
         minConfidence: 0.5
       };
-      const result = await MacOCR.recognizeBuffer(testImageBuffer, options);
+      const result = await MacOCR.recognizeFromBuffer(testImageBuffer, options);
       expect(result).toHaveProperty('text');
       expect(result).toHaveProperty('confidence');
       expect(result.confidence).toBeGreaterThanOrEqual(0.5);
@@ -348,7 +348,7 @@ describe('MacOCR', () => {
         const imageBuffer = await fs.promises.readFile(imagePath);
         await fs.promises.unlink(imagePath);
 
-        const result = await MacOCR.recognizeBuffer(imageBuffer);
+        const result = await MacOCR.recognizeFromBuffer(imageBuffer);
         expect(result).toHaveProperty('text');
         expect(result).toHaveProperty('confidence');
         expect(typeof result.text).toBe('string');
@@ -366,7 +366,7 @@ describe('MacOCR', () => {
       const largeBuffer = await fs.promises.readFile(imagePath);
       await fs.promises.unlink(imagePath);
 
-      const result = await MacOCR.recognizeBuffer(largeBuffer, {
+      const result = await MacOCR.recognizeFromBuffer(largeBuffer, {
         recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,  
         minConfidence: 0.0
       });
