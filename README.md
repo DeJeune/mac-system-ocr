@@ -41,7 +41,7 @@ import MacOCR from '@cherrystudio/mac-system-ocr';
 // Basic usage
 async function recognizeText() {
   try {
-    const text = await MacOCR.recognize('path/to/your/image.png');
+    const text = await MacOCR.recognizeFromPath('path/to/your/image.png');
     console.log('Recognized text:', text);
   } catch (error) {
     console.error('OCR failed:', error);
@@ -56,14 +56,14 @@ async function recognizeWithOptions() {
     minConfidence: 0.5,
   };
   
-  const text = await MacOCR.recognize('path/to/your/image.jpg', options);
+  const text = await MacOCR.recognizeFromPath('path/to/your/image.jpg', options);
   console.log('Recognized text:', text);
 }
 ```
 
 ## API Reference
 
-### `MacOCR.recognize(imagePath: string, options?: OCROptions): Promise<string>`
+### `MacOCR.recognizeFromPath(imagePath: string, options?: RecognizeOptions): Promise<string>`
 
 Performs OCR on the specified image file and returns the recognized text.
 
@@ -72,7 +72,7 @@ Performs OCR on the specified image file and returns the recognized text.
 - `imagePath` (string): Path to the image file
 - `options` (optional): Configuration object for OCR
 
-#### OCROptions
+#### RecognizeOptions
 
 ```typescript
 interface RecognizeOptions {
@@ -101,6 +101,10 @@ The following errors may be thrown:
 - `InvalidFormatError`: Unsupported image format
 - `OCRError`: Recognition failed
 
+### `MacOCR.recognizeBatchFromPath(imagePaths: string[], options?: RecognizeBatchOptions): Promise<string[]>`
+
+### `MacOCR.recognizeFromBuffer(imageBuffer: Buffer | Uint8Array, options?: RecognizeOptions): Promise<string>`
+
 ## Examples
 
 ### Basic Text Recognition
@@ -108,7 +112,7 @@ The following errors may be thrown:
 ```typescript
 import { MacOCR } from '@cherrystudio/mac-system-ocr';
 
-const text = await MacOCR.recognize('screenshot.png');
+const text = await MacOCR.recognizeFromPath('screenshot.png');
 console.log(text);
 ```
 
@@ -117,7 +121,7 @@ console.log(text);
 ```typescript
 import { MacOCR } from '@cherrystudio/mac-system-ocr';
 
-const text = await MacOCR.recognize('document.jpg', {
+const text = await MacOCR.recognizeFromPath('document.jpg', {
   languages: ['en-US', 'zh-Hans'],
   recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
   minConfidence: 0.5,
