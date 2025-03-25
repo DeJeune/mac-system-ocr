@@ -82,6 +82,37 @@ CGImageRef CreateCGImageFromPath(const char* path, char** error) {
     }
 }
 
+CGImageRef CreateCGImageFromBuffer(const void* buffer, size_t length, char** error) {
+    if (!buffer || length == 0 || !error) {
+        if (error) *error = strdup("Invalid parameters");
+        return NULL;
+    }
+    
+    @autoreleasepool {
+        NSData* imageData = [NSData dataWithBytes:buffer length:length];
+        if (!imageData) {
+            *error = strdup("Failed to create NSData from buffer");
+            return NULL;
+        }
+
+        CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
+        if (!imageSource) {
+            *error = strdup("Failed to create image source from buffer");
+            return NULL;
+        }
+        
+        CGImageRef cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
+        CFRelease(imageSource);
+        
+        if (!cgImage) {
+            *error = strdup("Failed to create CGImage from buffer source");
+            return NULL;
+        }
+        
+        return cgImage;
+    }
+}
+
 OCRResult* perform_ocr(CGImageRef image, const OCROptions* options) {
     @autoreleasepool {
         OCRResult* result = (OCRResult*)malloc(sizeof(OCRResult));

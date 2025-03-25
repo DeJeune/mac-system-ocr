@@ -12,6 +12,7 @@
     "scripts": {
         "build": "node-gyp rebuild",
         "clean": "node-gyp clean",
+        "pretest": "npm run build",
         "test": "jest",
         "test:watch": "jest --watch",
         "prepublish": "npm run build && npm test",

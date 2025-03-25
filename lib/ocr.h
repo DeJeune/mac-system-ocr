@@ -55,6 +55,15 @@ typedef struct {
 } OCRBatchOptions;
 
 /**
+ * Create CGImage from buffer data
+ * @param buffer pointer to the image data buffer
+ * @param length length of the buffer
+ * @param error pointer to store error message, NULL if no error
+ * @return CGImageRef if successful, NULL if failed
+ */
+CGImageRef CreateCGImageFromBuffer(const void* buffer, size_t length, char** error);
+
+/**
  * Perform OCR recognition
  * @param CGImageRef CoreGraphics Image Reference
  * @param options OCR options, can be NULL to use default values

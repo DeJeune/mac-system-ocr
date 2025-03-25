@@ -4,6 +4,7 @@
 #include "ocr.h"
 
 extern CGImageRef CreateCGImageFromPath(const char* path, char** error);
+extern CGImageRef CreateCGImageFromBuffer(const void* buffer, size_t length, char** error);
 
 typedef struct {
     napi_async_work work;
@@ -23,6 +24,16 @@ typedef struct {
     OCRBatchResult* result;
     char* error_message;
 } BatchOCRWork;
+
+typedef struct {
+    napi_async_work work;
+    napi_deferred deferred;
+    void* buffer_data;
+    size_t buffer_length;
+    OCROptions options;
+    OCRResult* result;
+    char* error_message;
+} OCRBufferWork;
 
 void ExecuteOCR(napi_env env, void* data) {
     OCRWork* work = (OCRWork*)data;
@@ -511,13 +522,205 @@ napi_value RecognizeBatch(napi_env env, napi_callback_info info) {
     return promise;
 }
 
-napi_value Init(napi_env env, napi_value exports) {
-    napi_value fn;
-    napi_create_function(env, NULL, 0, Recognize, NULL, &fn);
-    napi_set_named_property(env, exports, "recognize", fn);
+void ExecuteBufferOCR(napi_env env, void* data) {
+    OCRBufferWork* work = (OCRBufferWork*)data;
     
-    napi_create_function(env, NULL, 0, RecognizeBatch, NULL, &fn);
-    napi_set_named_property(env, exports, "recognizeBatch", fn);
+    char* error = NULL;
+    CGImageRef image = CreateCGImageFromBuffer(work->buffer_data, work->buffer_length, &error);
+    
+    if (!image) {
+        if (error) {
+            work->error_message = error;
+            return;
+        } else {
+            work->error_message = strdup("Failed to create image from buffer");
+            return;
+        }
+    }
+    
+    work->result = perform_ocr(image, &work->options);
+    
+    CGImageRelease(image);
+}
+
+void CompleteBufferOCR(napi_env env, napi_status status, void* data) {
+    OCRBufferWork* work = (OCRBufferWork*)data;
+    
+    if (work->error_message) {
+        napi_value error, error_msg;
+        napi_create_string_utf8(env, work->error_message, NAPI_AUTO_LENGTH, &error_msg);
+        if (strstr(work->error_message, "must be a Buffer") != NULL ||
+            strstr(work->error_message, "argument type") != NULL) {
+            napi_create_type_error(env, NULL, error_msg, &error);
+        } else {
+            napi_create_error(env, NULL, error_msg, &error);
+        }
+        napi_reject_deferred(env, work->deferred, error);
+        free(work->error_message);
+    }
+    else if (work->result && work->result->error) {
+        napi_value error, error_msg;
+        napi_create_string_utf8(env, work->result->error, NAPI_AUTO_LENGTH, &error_msg);
+        napi_create_error(env, NULL, error_msg, &error);
+        napi_reject_deferred(env, work->deferred, error);
+    }
+    else if (work->result) {
+        napi_value obj, text, confidence;
+        napi_create_object(env, &obj);
+
+        if (work->result->text) {
+            napi_create_string_utf8(env, work->result->text, NAPI_AUTO_LENGTH, &text);
+            napi_set_named_property(env, obj, "text", text);
+        } else {
+            napi_get_null(env, &text);
+            napi_set_named_property(env, obj, "text", text);
+        }
+        
+        napi_create_double(env, work->result->confidence, &confidence);
+        napi_set_named_property(env, obj, "confidence", confidence);
+        
+        napi_resolve_deferred(env, work->deferred, obj);
+    }
+    else {
+        napi_value error, error_msg;
+        napi_create_string_utf8(env, "Unknown error occurred", NAPI_AUTO_LENGTH, &error_msg);
+        napi_create_error(env, NULL, error_msg, &error);
+        napi_reject_deferred(env, work->deferred, error);
+    }
+    
+    // 清理资源
+    if (work->result) {
+        free_ocr_result(work->result);
+    }
+    if (work->buffer_data) {
+        free(work->buffer_data);
+    }
+    if (work->options.languages && strcmp(work->options.languages, "en-US") != 0) {
+        free((void*)work->options.languages);
+    }
+    napi_delete_async_work(env, work->work);
+    free(work);
+}
+
+napi_value RecognizeBuffer(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value args[2];
+    napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+    
+    if (argc < 1) {
+        napi_throw_type_error(env, NULL, "Wrong number of arguments");
+        return NULL;
+    }
+    
+    napi_value promise;
+    napi_deferred deferred;
+    napi_create_promise(env, &deferred, &promise);
+    
+    // Get buffer data
+    void* buffer_data;
+    size_t buffer_length;
+    if (napi_get_buffer_info(env, args[0], &buffer_data, &buffer_length) != napi_ok) {
+        napi_throw_type_error(env, NULL, "Failed to get buffer info");
+        return NULL;
+    }
+    
+    OCRBufferWork* work = (OCRBufferWork*)malloc(sizeof(OCRBufferWork));
+    if (!work) {
+        napi_throw_error(env, NULL, "Failed to allocate memory");
+        return NULL;
+    }
+    
+    // Copy buffer data
+    work->buffer_data = malloc(buffer_length);
+    if (!work->buffer_data) {
+        free(work);
+        napi_throw_error(env, NULL, "Failed to allocate memory for buffer");
+        return NULL;
+    }
+    memcpy(work->buffer_data, buffer_data, buffer_length);
+    work->buffer_length = buffer_length;
+    work->deferred = deferred;
+    work->result = NULL;
+    work->error_message = NULL;
+    
+    // Verify second argument is an object if provided
+    if (argc > 1 && args[1] != NULL) {
+        napi_valuetype optionsType;
+        if (napi_typeof(env, args[1], &optionsType) != napi_ok || 
+            (optionsType != napi_object && optionsType != napi_null && optionsType != napi_undefined)) {
+            free(work->buffer_data);
+            free(work);
+            napi_throw_type_error(env, NULL, "Options argument must be an object");
+            return NULL;
+        }
+    }
+    
+    // Get options
+    if (argc > 1 && args[1] != NULL) {
+        if (!GetOptionsFromObject(env, args[1], &work->options)) {
+            free(work->buffer_data);
+            free(work);
+            napi_throw_error(env, NULL, "Invalid options");
+            return NULL;
+        }
+    } else {
+        // Use default options
+        work->options = (OCROptions){
+            .languages = "en-US",
+            .recognition_level = OCR_RECOGNITION_LEVEL_ACCURATE,
+            .min_confidence = 0.0,
+        };
+    }
+    
+    // Create async work
+    napi_value resource_name;
+    napi_create_string_utf8(env, "BufferOCR", NAPI_AUTO_LENGTH, &resource_name);
+    
+    napi_status status = napi_create_async_work(env,
+                                              NULL,
+                                              resource_name,
+                                              ExecuteBufferOCR,
+                                              CompleteBufferOCR,
+                                              work,
+                                              &work->work);
+    
+    if (status != napi_ok) {
+        if (work->options.languages && strcmp(work->options.languages, "en-US") != 0) {
+            free((void*)work->options.languages);
+        }
+        free(work->buffer_data);
+        free(work);
+        napi_throw_error(env, NULL, "Failed to create async work");
+        return NULL;
+    }
+    
+    status = napi_queue_async_work(env, work->work);
+    if (status != napi_ok) {
+        if (work->options.languages && strcmp(work->options.languages, "en-US") != 0) {
+            free((void*)work->options.languages);
+        }
+        napi_delete_async_work(env, work->work);
+        free(work->buffer_data);
+        free(work);
+        napi_throw_error(env, NULL, "Failed to queue async work");
+        return NULL;
+    }
+    
+    return promise;
+}
+
+napi_value Init(napi_env env, napi_value exports) {
+    napi_value recognize_fn;
+    napi_create_function(env, NULL, 0, Recognize, NULL, &recognize_fn);
+    napi_set_named_property(env, exports, "recognize", recognize_fn);
+    
+    napi_value recognize_buffer_fn;
+    napi_create_function(env, NULL, 0, RecognizeBuffer, NULL, &recognize_buffer_fn);
+    napi_set_named_property(env, exports, "recognizeBuffer", recognize_buffer_fn);
+    
+    napi_value recognize_batch_fn;
+    napi_create_function(env, NULL, 0, RecognizeBatch, NULL, &recognize_batch_fn);
+    napi_set_named_property(env, exports, "recognizeBatch", recognize_batch_fn);
     
     return exports;
 }

@@ -1,7 +1,8 @@
-const { recognize, recognizeBatch } = require('bindings')('mac_system_ocr');
+const { recognize, recognizeBatch, recognizeBuffer } = require('bindings')('mac_system_ocr');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { Buffer } = require('buffer');
 
 // Check operating system requirements
 const platform = os.platform();
@@ -160,6 +161,55 @@ class MacOCR {
       return results;
     } catch (error) {
       throw new Error(`Batch OCR failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Perform OCR text recognition on image buffer
+   * @param {Buffer|Uint8Array} imageBuffer - Image buffer data
+   * @param {Object} [options] - OCR options
+   * @param {string} [options.languages='en-US'] - Recognition language, multiple languages separated by commas
+   * @param {number} [options.recognitionLevel=MacOCR.RECOGNITION_LEVEL_ACCURATE] - Recognition level: MacOCR.RECOGNITION_LEVEL_FAST or MacOCR.RECOGNITION_LEVEL_ACCURATE
+   * @param {number} [options.minConfidence=0.0] - Minimum confidence threshold 0.0-1.0
+   * @returns {Promise<{text: string, confidence: number}>} Recognition result
+   */
+  static async recognizeBuffer(imageBuffer, options = {}) {
+    // Validate input
+    if (!(Buffer.isBuffer(imageBuffer) || imageBuffer instanceof Uint8Array)) {
+      throw new TypeError('Image buffer must be a Buffer or Uint8Array');
+    }
+
+    // Convert Uint8Array to Buffer if needed
+    const buffer = Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer);
+
+    if (buffer.length === 0) {
+      throw new Error('Image buffer cannot be empty');
+    }
+
+    // Validate and normalize options
+    const normalizedOptions = {
+      languages: options.languages || 'en-US',
+      recognitionLevel: options.recognitionLevel ?? MacOCR.RECOGNITION_LEVEL_ACCURATE,
+      minConfidence: options.minConfidence || 0.0
+    };
+
+    if (![MacOCR.RECOGNITION_LEVEL_FAST, MacOCR.RECOGNITION_LEVEL_ACCURATE].includes(normalizedOptions.recognitionLevel)) {
+      throw new Error('Recognition level must be MacOCR.RECOGNITION_LEVEL_FAST or MacOCR.RECOGNITION_LEVEL_ACCURATE');
+    }
+
+    if (normalizedOptions.minConfidence < 0 || normalizedOptions.minConfidence > 1) {
+      throw new Error('Minimum confidence must be between 0.0 and 1.0');
+    }
+
+    try {
+      // Call native module with the Buffer
+      return await recognizeBuffer(buffer, normalizedOptions);
+    } catch (error) {
+      // Preserve original error type
+      if (error instanceof TypeError) {
+        throw error;
+      }
+      throw new Error(`OCR failed: ${error.message}`);
     }
   }
 }
