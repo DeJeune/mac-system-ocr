@@ -26,7 +26,7 @@ declare class MacOCR {
    * @param imagePath - Image file path
    * @param options - OCR options
    */
-  static recognize(
+  static recognizeFromPath(
     imagePath: string,
     options?: RecognizeOptions,
   ): Promise<OCRResult>;
@@ -36,10 +36,15 @@ declare class MacOCR {
    * @param imagePaths - Image file path array
    * @param options - Batch processing options
    */
-  static recognizeBatch(
+  static recognizeBatchFromPath(
     imagePaths: string[],
     options?: RecognizeBatchOptions,
   ): Promise<OCRResult[]>;
+
+  static recognizeFromBuffer(
+    imageBuffer: Buffer | Uint8Array,
+    options?: RecognizeOptions,
+  ): Promise<OCRResult>;
 }
 
 export { RecognizeOptions, RecognizeBatchOptions, OCRResult };

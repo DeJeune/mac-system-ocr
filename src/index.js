@@ -33,25 +33,21 @@ class MacOCR {
    * @param {string} [options.outputPath] - Output file path, if specified, the result will be saved to the file
    * @returns {Promise<{text: string, confidence: number}>} Recognition result
    */
-  static async recognize(imagePath, options = {}) {
-    // Validate input
+  static async recognizeFromPath(imagePath, options = {}) {
     if (typeof imagePath !== 'string') {
       throw new TypeError('Image path must be a string');
     }
 
-    // Validate if the file exists
     if (!fs.existsSync(imagePath)) {
       throw new Error('Image file does not exist');
     }
 
-    // Validate file extension
     const ext = path.extname(imagePath).toLowerCase();
     const validExts = ['.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', 'webp'];
     if (!validExts.includes(ext)) {
       throw new Error(`Unsupported image format: ${ext}`);
     }
 
-    // Validate and normalize options
     const normalizedOptions = {
       languages: options.languages || 'en-US',
       recognitionLevel: options.recognitionLevel ?? MacOCR.RECOGNITION_LEVEL_ACCURATE,
@@ -67,7 +63,6 @@ class MacOCR {
       throw new Error('Minimum confidence must be between 0.0 and 1.0');
     }
 
-    // Validate output path
     if (normalizedOptions.outputPath) {
       const outputDir = path.dirname(normalizedOptions.outputPath);
       if (!fs.existsSync(outputDir)) {
@@ -79,7 +74,6 @@ class MacOCR {
     }
 
     try {
-      // Call native module
       return await recognize(imagePath, normalizedOptions);
     } catch (error) {
       throw new Error(`OCR failed: ${error.message}`);
@@ -98,8 +92,7 @@ class MacOCR {
    * @param {number} [options.batchSize=1] - Batch size
    * @returns {Promise<Array<{text: string, confidence: number}>>} Recognition result array
    */
-  static async recognizeBatch(imagePaths, options = {}) {
-    // Validate input
+  static async recognizeBatchFromPath(imagePaths, options = {}) {
     if (!Array.isArray(imagePaths)) {
       throw new TypeError('Image paths must be an array');
     }
@@ -108,7 +101,6 @@ class MacOCR {
       throw new Error('Image paths array cannot be empty');
     }
 
-    // Validate all image paths
     for (const imagePath of imagePaths) {
       if (typeof imagePath !== 'string') {
         throw new TypeError('Each image path must be a string');
@@ -125,7 +117,6 @@ class MacOCR {
       }
     }
 
-    // Normalize options
     const normalizedOptions = {
       ocrOptions: {
         languages: options.ocrOptions?.languages || 'en-US',
@@ -136,7 +127,6 @@ class MacOCR {
       batchSize: options.batchSize || 1
     };
 
-    // Validate OCR options
     if (![MacOCR.RECOGNITION_LEVEL_FAST, MacOCR.RECOGNITION_LEVEL_ACCURATE]
         .includes(normalizedOptions.ocrOptions.recognitionLevel)) {
       throw new Error('Recognition level must be MacOCR.RECOGNITION_LEVEL_FAST or MacOCR.RECOGNITION_LEVEL_ACCURATE');
@@ -146,7 +136,6 @@ class MacOCR {
       throw new Error('Minimum confidence must be between 0.0 and 1.0');
     }
 
-    // Validate batch processing options
     if (normalizedOptions.maxThreads < 0) {
       throw new Error('Maximum threads must be greater than or equal to 0');
     }
@@ -156,7 +145,6 @@ class MacOCR {
     }
 
     try {
-      // Call native module's batch method
       const results = await recognizeBatch(imagePaths, normalizedOptions);
       return results;
     } catch (error) {
@@ -173,20 +161,18 @@ class MacOCR {
    * @param {number} [options.minConfidence=0.0] - Minimum confidence threshold 0.0-1.0
    * @returns {Promise<{text: string, confidence: number}>} Recognition result
    */
-  static async recognizeBuffer(imageBuffer, options = {}) {
-    // Validate input
+  static async recognizeFromBuffer(imageBuffer, options = {}) {
+
     if (!(Buffer.isBuffer(imageBuffer) || imageBuffer instanceof Uint8Array)) {
       throw new TypeError('Image buffer must be a Buffer or Uint8Array');
     }
 
-    // Convert Uint8Array to Buffer if needed
     const buffer = Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer);
 
     if (buffer.length === 0) {
       throw new Error('Image buffer cannot be empty');
     }
 
-    // Validate and normalize options
     const normalizedOptions = {
       languages: options.languages || 'en-US',
       recognitionLevel: options.recognitionLevel ?? MacOCR.RECOGNITION_LEVEL_ACCURATE,
@@ -202,10 +188,8 @@ class MacOCR {
     }
 
     try {
-      // Call native module with the Buffer
       return await recognizeBuffer(buffer, normalizedOptions);
     } catch (error) {
-      // Preserve original error type
       if (error instanceof TypeError) {
         throw error;
       }

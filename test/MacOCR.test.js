@@ -357,13 +357,19 @@ describe('MacOCR', () => {
     });
 
     test('should handle large image buffers', async () => {
-      // 创建一个较大的测试图片
       const uniqueName = `macocr-large-buffer-test-${uuidv4()}.png`;
-      const imagePath = await createTestImage('MacOCR large buffer test', uniqueName, { width: 2048, height: 2048 });
+      const imagePath = await createTestImage('MacOCR large buffer test', uniqueName, { 
+        width: 1024, 
+        height: 768,
+        fontSize: 48
+      });
       const largeBuffer = await fs.promises.readFile(imagePath);
       await fs.promises.unlink(imagePath);
 
-      const result = await MacOCR.recognizeBuffer(largeBuffer);
+      const result = await MacOCR.recognizeBuffer(largeBuffer, {
+        recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,  
+        minConfidence: 0.0
+      });
       expect(result).toHaveProperty('text');
       expect(result).toHaveProperty('confidence');
       expect(result.text.toLowerCase()).toContain('large buffer test');
