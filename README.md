@@ -21,7 +21,7 @@ A high-performance OCR (Optical Character Recognition) Node.js native module pow
 ## Installation
 
 ```bash
-npm install mac-system-ocr
+npm install @cherrystudio/mac-system-ocr
 ```
 
 ## Development
@@ -36,7 +36,7 @@ npm run build
 ## Quick Start
 
 ```typescript
-import MacOCR from 'mac-system-ocr';
+import MacOCR from '@cherrystudio/mac-system-ocr';
 
 // Basic usage
 async function recognizeText() {
@@ -106,7 +106,7 @@ The following errors may be thrown:
 ### Basic Text Recognition
 
 ```typescript
-import { MacOCR } from 'mac-system-ocr';
+import { MacOCR } from '@cherrystudio/mac-system-ocr';
 
 const text = await MacOCR.recognize('screenshot.png');
 console.log(text);
@@ -115,7 +115,7 @@ console.log(text);
 ### Multi-language Recognition
 
 ```typescript
-import { MacOCR } from 'mac-system-ocr';
+import { MacOCR } from '@cherrystudio/mac-system-ocr';
 
 const text = await MacOCR.recognize('document.jpg', {
   languages: ['en-US', 'zh-Hans'],
