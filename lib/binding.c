@@ -35,6 +35,17 @@ typedef struct {
     char* error_message;
 } OCRBufferWork;
 
+typedef struct {
+    napi_async_work work;
+    napi_deferred deferred;
+    void** buffer_data;
+    size_t* buffer_lengths;
+    size_t count;
+    OCRBatchOptions options;
+    OCRBatchResult* result;
+    char* error_message;
+} BatchBufferOCRWork;
+
 void ExecuteOCR(napi_env env, void* data) {
     OCRWork* work = (OCRWork*)data;
     
@@ -709,6 +720,225 @@ napi_value RecognizeBuffer(napi_env env, napi_callback_info info) {
     return promise;
 }
 
+void ExecuteBatchBufferOCR(napi_env env, void* data) {
+    BatchBufferOCRWork* work = (BatchBufferOCRWork*)data;
+    work->result = perform_batch_ocr_from_buffers((const void**)work->buffer_data, work->buffer_lengths, work->count, &work->options);
+}
+
+void CompleteBatchBufferOCR(napi_env env, napi_status status, void* data) {
+    BatchBufferOCRWork* work = (BatchBufferOCRWork*)data;
+    
+    if (work->error_message) {
+        napi_value error, error_msg;
+        napi_create_string_utf8(env, work->error_message, NAPI_AUTO_LENGTH, &error_msg);
+        napi_create_error(env, NULL, error_msg, &error);
+        napi_reject_deferred(env, work->deferred, error);
+        free(work->error_message);
+    }
+    else if (work->result && work->result->error) {
+        napi_value error, error_msg;
+        napi_create_string_utf8(env, work->result->error, NAPI_AUTO_LENGTH, &error_msg);
+        napi_create_error(env, NULL, error_msg, &error);
+        napi_reject_deferred(env, work->deferred, error);
+    }
+    else if (work->result) {
+        napi_value results_array;
+        napi_create_array_with_length(env, work->result->count, &results_array);
+
+        for (size_t i = 0; i < work->result->count; i++) {
+            OCRResult* result = work->result->results[i];
+            
+            napi_value obj, text, confidence;
+            napi_create_object(env, &obj);
+
+            if (result && result->text) {
+                napi_create_string_utf8(env, result->text, NAPI_AUTO_LENGTH, &text);
+            } else {
+                napi_get_null(env, &text);
+            }
+            napi_set_named_property(env, obj, "text", text);
+
+            if (result) {
+                napi_create_double(env, result->confidence, &confidence);
+            } else {
+                napi_create_double(env, 0.0, &confidence);
+            }
+            napi_set_named_property(env, obj, "confidence", confidence);
+
+            napi_set_element(env, results_array, i, obj);
+        }
+
+        napi_resolve_deferred(env, work->deferred, results_array);
+    }
+    else {
+        napi_value error, error_msg;
+        napi_create_string_utf8(env, "Unknown error occurred", NAPI_AUTO_LENGTH, &error_msg);
+        napi_create_error(env, NULL, error_msg, &error);
+        napi_reject_deferred(env, work->deferred, error);
+    }
+    
+    // Cleanup
+    if (work->result) {
+        free_ocr_batch_result(work->result);
+    }
+    if (work->buffer_data) {
+        for (size_t i = 0; i < work->count; i++) {
+            if (work->buffer_data[i]) {
+                free(work->buffer_data[i]);
+            }
+        }
+        free(work->buffer_data);
+    }
+    if (work->buffer_lengths) {
+        free(work->buffer_lengths);
+    }
+    if (work->options.ocr_options.languages && strcmp(work->options.ocr_options.languages, "en-US") != 0) {
+        free((void*)work->options.ocr_options.languages);
+    }
+    napi_delete_async_work(env, work->work);
+    free(work);
+}
+
+napi_value RecognizeBatchFromBuffer(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value args[2];
+    napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+    
+    if (argc < 1) {
+        napi_throw_error(env, NULL, "Wrong number of arguments");
+        return NULL;
+    }
+    
+    napi_value promise;
+    napi_deferred deferred;
+    napi_create_promise(env, &deferred, &promise);
+    
+    // Get array of buffers
+    bool is_array;
+    if (napi_is_array(env, args[0], &is_array) != napi_ok || !is_array) {
+        napi_throw_error(env, NULL, "First argument must be an array of buffers");
+        return NULL;
+    }
+    
+    uint32_t array_length;
+    napi_get_array_length(env, args[0], &array_length);
+    
+    if (array_length == 0) {
+        napi_throw_error(env, NULL, "Buffer array cannot be empty");
+        return NULL;
+    }
+    
+    BatchBufferOCRWork* work = (BatchBufferOCRWork*)malloc(sizeof(BatchBufferOCRWork));
+    if (!work) {
+        napi_throw_error(env, NULL, "Failed to allocate memory");
+        return NULL;
+    }
+    
+    // Initialize work structure
+    work->buffer_data = (void**)malloc(sizeof(void*) * array_length);
+    work->buffer_lengths = (size_t*)malloc(sizeof(size_t) * array_length);
+    work->count = array_length;
+    work->deferred = deferred;
+    work->result = NULL;
+    work->error_message = NULL;
+    
+    if (!work->buffer_data || !work->buffer_lengths) {
+        if (work->buffer_data) free(work->buffer_data);
+        if (work->buffer_lengths) free(work->buffer_lengths);
+        free(work);
+        napi_throw_error(env, NULL, "Failed to allocate memory for buffers");
+        return NULL;
+    }
+    
+    // Get all buffers
+    for (uint32_t i = 0; i < array_length; i++) {
+        napi_value element;
+        napi_get_element(env, args[0], i, &element);
+        
+        void* buffer_data;
+        size_t buffer_length;
+        if (napi_get_buffer_info(env, element, &buffer_data, &buffer_length) != napi_ok) {
+            for (uint32_t j = 0; j < i; j++) {
+                free(work->buffer_data[j]);
+            }
+            free(work->buffer_data);
+            free(work->buffer_lengths);
+            free(work);
+            napi_throw_type_error(env, NULL, "Array elements must be Buffer or Uint8Array");
+            return NULL;
+        }
+        
+        work->buffer_data[i] = malloc(buffer_length);
+        if (!work->buffer_data[i]) {
+            for (uint32_t j = 0; j < i; j++) {
+                free(work->buffer_data[j]);
+            }
+            free(work->buffer_data);
+            free(work->buffer_lengths);
+            free(work);
+            napi_throw_error(env, NULL, "Failed to allocate memory for buffer");
+            return NULL;
+        }
+        
+        memcpy(work->buffer_data[i], buffer_data, buffer_length);
+        work->buffer_lengths[i] = buffer_length;
+    }
+    
+    // Get options
+    if (argc > 1) {
+        if (!GetBatchOptionsFromObject(env, args[1], &work->options)) {
+            for (uint32_t i = 0; i < array_length; i++) {
+                free(work->buffer_data[i]);
+            }
+            free(work->buffer_data);
+            free(work->buffer_lengths);
+            free(work);
+            napi_throw_error(env, NULL, "Invalid options");
+            return NULL;
+        }
+    } else {
+        work->options = (OCRBatchOptions){
+            .ocr_options = (OCROptions){
+                .languages = "en-US",
+                .recognition_level = OCR_RECOGNITION_LEVEL_ACCURATE,
+                .min_confidence = 0.0
+            },
+            .max_threads = 0,
+            .batch_size = 1
+        };
+    }
+    
+    // Create async work
+    napi_value resource_name;
+    napi_create_string_utf8(env, "BatchBufferOCR", NAPI_AUTO_LENGTH, &resource_name);
+    
+    napi_status status = napi_create_async_work(env,
+                                              NULL,
+                                              resource_name,
+                                              ExecuteBatchBufferOCR,
+                                              CompleteBatchBufferOCR,
+                                              work,
+                                              &work->work);
+    
+    if (status != napi_ok) {
+        if (work->options.ocr_options.languages && strcmp(work->options.ocr_options.languages, "en-US") != 0) {
+            free((void*)work->options.ocr_options.languages);
+        }
+        for (uint32_t i = 0; i < array_length; i++) {
+            free(work->buffer_data[i]);
+        }
+        free(work->buffer_data);
+        free(work->buffer_lengths);
+        free(work);
+        napi_throw_error(env, NULL, "Failed to create async work");
+        return NULL;
+    }
+    
+    napi_queue_async_work(env, work->work);
+    
+    return promise;
+}
+
 napi_value Init(napi_env env, napi_value exports) {
     napi_value recognize_fn;
     napi_create_function(env, NULL, 0, Recognize, NULL, &recognize_fn);
@@ -721,6 +951,10 @@ napi_value Init(napi_env env, napi_value exports) {
     napi_value recognize_batch_fn;
     napi_create_function(env, NULL, 0, RecognizeBatch, NULL, &recognize_batch_fn);
     napi_set_named_property(env, exports, "recognizeBatch", recognize_batch_fn);
+    
+    napi_value recognize_batch_buffer_fn;
+    napi_create_function(env, NULL, 0, RecognizeBatchFromBuffer, NULL, &recognize_batch_buffer_fn);
+    napi_set_named_property(env, exports, "recognizeBatchFromBuffer", recognize_batch_buffer_fn);
     
     return exports;
 }

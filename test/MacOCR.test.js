@@ -375,4 +375,132 @@ describe('MacOCR', () => {
       expect(result.text.toLowerCase()).toContain('large buffer test');
     });
   });
+
+  describe('recognizeBatchFromBuffer()', () => {
+    let testImageBuffers = [];
+    
+    beforeEach(async () => {
+      // Create multiple test images and store their buffers
+      const imageCount = 3;
+      for (let i = 0; i < imageCount; i++) {
+        const uniqueName = `macocr-buffer-batch-test-${uuidv4()}.png`;
+        const imagePath = await createTestImage(`MacOCR buffer batch test ${i + 1}`, uniqueName);
+        const buffer = await fs.promises.readFile(imagePath);
+        testImageBuffers.push(buffer);
+        await fs.promises.unlink(imagePath); // Clean up image file immediately
+      }
+    });
+
+    afterEach(() => {
+      testImageBuffers = [];
+    });
+
+    test('should throw TypeError for non-array image buffers', async () => {
+      await expect(MacOCR.recognizeBatchFromBuffer('not-an-array')).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeBatchFromBuffer(123)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeBatchFromBuffer(null)).rejects.toThrow(TypeError);
+      await expect(MacOCR.recognizeBatchFromBuffer(undefined)).rejects.toThrow(TypeError);
+    });
+
+    test('should throw Error for empty array of image buffers', async () => {
+      await expect(MacOCR.recognizeBatchFromBuffer([])).rejects.toThrow('Image buffers array cannot be empty');
+    });
+
+    test('should throw TypeError for invalid buffer types in array', async () => {
+      const invalidBuffers = [...testImageBuffers, 'not-a-buffer'];
+      await expect(MacOCR.recognizeBatchFromBuffer(invalidBuffers))
+        .rejects.toThrow(TypeError);
+    });
+
+    test('should accept array of Uint8Arrays as input', async () => {
+      const uint8Arrays = testImageBuffers.map(buffer => new Uint8Array(buffer));
+      const results = await MacOCR.recognizeBatchFromBuffer(uint8Arrays);
+      
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(testImageBuffers.length);
+      
+      for (let i = 0; i < results.length; i++) {
+        expect(results[i]).toHaveProperty('text');
+        expect(results[i]).toHaveProperty('confidence');
+        expect(typeof results[i].text).toBe('string');
+        expect(typeof results[i].confidence).toBe('number');
+        expect(results[i].confidence).toBeGreaterThanOrEqual(0);
+        expect(results[i].confidence).toBeLessThanOrEqual(1);
+        expect(results[i].text.toLowerCase()).toContain(`buffer batch test ${i + 1}`);
+      }
+    });
+
+    test('should perform batch OCR with default options', async () => {
+      const results = await MacOCR.recognizeBatchFromBuffer(testImageBuffers);
+      
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(testImageBuffers.length);
+      
+      for (let i = 0; i < results.length; i++) {
+        expect(results[i]).toHaveProperty('text');
+        expect(results[i]).toHaveProperty('confidence');
+        expect(results[i].text.toLowerCase()).toContain(`buffer batch test ${i + 1}`);
+      }
+    });
+
+    test('should perform batch OCR with custom options', async () => {
+      const options = {
+        ocrOptions: {
+          languages: 'en-US',
+          recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
+          minConfidence: 0.5
+        },
+        maxThreads: 2,
+        batchSize: 2
+      };
+
+      const results = await MacOCR.recognizeBatchFromBuffer(testImageBuffers, options);
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(testImageBuffers.length);
+
+      for (const result of results) {
+        expect(result).toHaveProperty('text');
+        expect(result).toHaveProperty('confidence');
+        expect(result.confidence).toBeGreaterThanOrEqual(0.5);
+      }
+    });
+
+    test('should handle invalid batch options', async () => {
+      const invalidOptions = {
+        maxThreads: -1,
+        batchSize: 0
+      };
+      await expect(MacOCR.recognizeBatchFromBuffer(testImageBuffers, invalidOptions))
+        .rejects.toThrow();
+    });
+
+    test('should process large batches efficiently', async () => {
+      const largeImageCount = 10;
+      const largeBuffers = [];
+
+      // Create more test images
+      for (let i = 0; i < largeImageCount; i++) {
+        const uniqueName = `macocr-large-buffer-batch-${uuidv4()}.png`;
+        const imagePath = await createTestImage(`Large buffer batch test ${i + 1}`, uniqueName);
+        const buffer = await fs.promises.readFile(imagePath);
+        largeBuffers.push(buffer);
+        await fs.promises.unlink(imagePath);
+      }
+
+      const options = {
+        maxThreads: 4,
+        batchSize: 3
+      };
+
+      const results = await MacOCR.recognizeBatchFromBuffer(largeBuffers, options);
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(largeImageCount);
+
+      for (let i = 0; i < results.length; i++) {
+        expect(results[i]).toHaveProperty('text');
+        expect(results[i]).toHaveProperty('confidence');
+        expect(results[i].text.toLowerCase()).toContain(`large buffer batch test ${i + 1}`);
+      }
+    });
+  });
 }); 

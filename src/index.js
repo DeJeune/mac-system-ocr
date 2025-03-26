@@ -1,4 +1,4 @@
-const { recognize, recognizeBatch, recognizeBuffer } = require('bindings')('mac_system_ocr');
+const { recognize, recognizeBatch, recognizeBuffer, recognizeBatchFromBuffer } = require('bindings')('mac_system_ocr');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -194,6 +194,73 @@ class MacOCR {
         throw error;
       }
       throw new Error(`OCR failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Perform batch OCR text recognition on image buffers
+   * @param {Array<Buffer|Uint8Array>} imageBuffers - Array of image buffer data
+   * @param {Object} [options] - Batch OCR options
+   * @param {Object} [options.ocrOptions] - OCR options for each image
+   * @param {string} [options.ocrOptions.languages='en-US'] - Recognition language, multiple languages separated by commas
+   * @param {number} [options.ocrOptions.recognitionLevel=MacOCR.RECOGNITION_LEVEL_ACCURATE] - Recognition level
+   * @param {number} [options.ocrOptions.minConfidence=0.0] - Minimum confidence threshold 0.0-1.0
+   * @param {number} [options.maxThreads=0] - Maximum number of threads (0 = auto)
+   * @param {number} [options.batchSize=1] - Batch size
+   * @returns {Promise<Array<{text: string, confidence: number}>>} Array of recognition results
+   */
+  static async recognizeBatchFromBuffer(imageBuffers, options = {}) {
+    if (!Array.isArray(imageBuffers)) {
+      throw new TypeError('Image buffers must be an array');
+    }
+
+    if (imageBuffers.length === 0) {
+      throw new Error('Image buffers array cannot be empty');
+    }
+
+    for (const buffer of imageBuffers) {
+      if (!(Buffer.isBuffer(buffer) || buffer instanceof Uint8Array)) {
+        throw new TypeError('Each image buffer must be a Buffer or Uint8Array');
+      }
+      if (buffer.length === 0) {
+        throw new Error('Image buffers cannot be empty');
+      }
+    }
+
+    const normalizedOptions = {
+      ocrOptions: {
+        languages: options.ocrOptions?.languages || 'en-US',
+        recognitionLevel: options.ocrOptions?.recognitionLevel ?? MacOCR.RECOGNITION_LEVEL_ACCURATE,
+        minConfidence: options.ocrOptions?.minConfidence || 0.0
+      },
+      maxThreads: options.maxThreads || 0,
+      batchSize: options.batchSize || 1
+    };
+
+    if (![MacOCR.RECOGNITION_LEVEL_FAST, MacOCR.RECOGNITION_LEVEL_ACCURATE].includes(normalizedOptions.ocrOptions.recognitionLevel)) {
+      throw new Error('Recognition level must be MacOCR.RECOGNITION_LEVEL_FAST or MacOCR.RECOGNITION_LEVEL_ACCURATE');
+    }
+
+    if (normalizedOptions.ocrOptions.minConfidence < 0 || normalizedOptions.ocrOptions.minConfidence > 1) {
+      throw new Error('Minimum confidence must be between 0.0 and 1.0');
+    }
+
+    if (normalizedOptions.maxThreads < 0) {
+      throw new Error('Maximum threads must be greater than or equal to 0');
+    }
+
+    if (normalizedOptions.batchSize < 1) {
+      throw new Error('Batch size must be greater than 0');
+    }
+
+    try {
+      const buffers = imageBuffers.map(buffer => Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer));
+      return await recognizeBatchFromBuffer(buffers, normalizedOptions);
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw error;
+      }
+      throw new Error(`Batch OCR failed: ${error.message}`);
     }
   }
 }

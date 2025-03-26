@@ -41,10 +41,25 @@ declare class MacOCR {
     options?: RecognizeBatchOptions,
   ): Promise<OCRResult[]>;
 
+  /**
+   * Perform OCR text recognition on image buffer
+   * @param imageBuffer - Image buffer data
+   * @param options - OCR options
+   */
   static recognizeFromBuffer(
     imageBuffer: Buffer | Uint8Array,
     options?: RecognizeOptions,
   ): Promise<OCRResult>;
+
+  /**
+   * Perform batch OCR text recognition on image buffers
+   * @param imageBuffers - Array of image buffer data
+   * @param options - Batch OCR options
+   */
+  static recognizeBatchFromBuffer(
+    imageBuffers: Array<Buffer | Uint8Array>,
+    options?: RecognizeBatchOptions,
+  ): Promise<OCRResult[]>;
 }
 
 export { RecognizeOptions, RecognizeBatchOptions, OCRResult };

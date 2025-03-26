@@ -347,4 +347,83 @@ OCRBatchResult* perform_batch_ocr(const char** image_paths, size_t count, const 
         
         return batch_result;
     }
+}
+
+OCRBatchResult* perform_batch_ocr_from_buffers(const void** buffers, const size_t* lengths, size_t count, const OCRBatchOptions* options) {
+    @autoreleasepool {
+        // 分配批处理结果结构体
+        OCRBatchResult* batch_result = (OCRBatchResult*)malloc(sizeof(OCRBatchResult));
+        if (!batch_result) {
+            return NULL;
+        }
+
+        batch_result->error = NULL;
+        batch_result->results = NULL;
+        batch_result->count = count;
+        batch_result->failed_count = 0;
+
+        if (!buffers || !lengths || count == 0) {
+            batch_result->error = strdup("No image buffers provided");
+            return batch_result;
+        }
+
+        const OCRBatchOptions* opts = options ? options : &DEFAULT_BATCH_OPTIONS;
+        
+        int thread_count = opts->max_threads > 0 ? 
+            opts->max_threads : getSystemThreadCount();
+        
+        batch_result->results = (OCRResult**)calloc(count, sizeof(OCRResult*));
+        if (!batch_result->results) {
+            batch_result->error = strdup("Memory allocation failed for results array");
+            return batch_result;
+        }
+
+        dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+        dispatch_group_t group = dispatch_group_create();
+        
+        dispatch_semaphore_t sema = dispatch_semaphore_create(thread_count);
+
+        std::atomic<int64_t>* atomic_failed_count = reinterpret_cast<std::atomic<int64_t>*>(&batch_result->failed_count);
+
+        for (size_t i = 0; i < count; i++) {
+            const void* current_buffer = buffers[i];
+            size_t current_length = lengths[i];
+            size_t current_index = i;
+            
+            dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+            dispatch_group_async(group, queue, ^{
+                @autoreleasepool {
+                    char* error = NULL;
+                    CGImageRef image = CreateCGImageFromBuffer(current_buffer, current_length, &error);
+                    
+                    if (!image) {
+                        OCRResult* result = (OCRResult*)malloc(sizeof(OCRResult));
+                        result->error = error ? error : strdup("Failed to create image from buffer");
+                        result->text = NULL;
+                        result->confidence = 0.0;
+                        batch_result->results[current_index] = result;
+                        atomic_failed_count->fetch_add(1, std::memory_order_relaxed);
+                        dispatch_semaphore_signal(sema);
+                        return;
+                    }
+
+                    OCRResult* result = perform_ocr(image, &opts->ocr_options);
+
+                    CGImageRelease(image);
+
+                    batch_result->results[current_index] = result;
+
+                    if (result && result->error) {
+                        atomic_failed_count->fetch_add(1, std::memory_order_relaxed);
+                    }
+                    
+                    dispatch_semaphore_signal(sema);
+                }
+            });
+        }
+
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+        
+        return batch_result;
+    }
 } 

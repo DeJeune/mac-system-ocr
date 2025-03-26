@@ -89,6 +89,17 @@ OCRResult* perform_ocr(CGImageRef image, const OCROptions* options);
 OCRBatchResult* perform_batch_ocr(const char** image_paths, size_t count, const OCRBatchOptions* options);
 
 /**
+ * Perform batch OCR recognition from buffers
+ * @param buffers array of buffer pointers
+ * @param lengths array of buffer lengths
+ * @param count number of buffers
+ * @param options batch processing options, can be NULL to use default values
+ * @return OCRBatchResult structure pointer
+ * @note The returned structure must be freed using free_ocr_batch_result
+ */
+OCRBatchResult* perform_batch_ocr_from_buffers(const void** buffers, const size_t* lengths, size_t count, const OCRBatchOptions* options);
+
+/**
  * Free OCR result
  * @param result pointer to the OCR result to be freed, can be NULL
  * @note After freeing, do not access result or its fields
