@@ -1,3 +1,12 @@
+# @cherrystudio/mac-system-ocr
+
+> ⚠️ **IMPORTANT UPDATE NOTICE**: Version 1.0.0 includes critical fixes for electron-builder compatibility. Please update to the latest version:
+> ```bash
+> npm install @cherrystudio/mac-system-ocr@latest
+> # or
+> yarn upgrade @cherrystudio/mac-system-ocr@latest
+> ```
+
 # Mac OCR Native Node.js Module
 
 A high-performance OCR (Optical Character Recognition) Node.js native module powered by macOS Vision Framework. This module provides fast and accurate text recognition capabilities for various image formats.
