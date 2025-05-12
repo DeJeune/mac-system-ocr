@@ -4,6 +4,7 @@
     "description": "Node.js N-API native module for MacOS Vision Framework OCR",
     "main": "src/index.js",
     "types": "src/index.d.ts",
+    "os": ["darwin"],
     "files": [
         "src/**/*",
         "binding.gyp",
