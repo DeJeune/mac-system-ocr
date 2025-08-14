@@ -1,6 +1,6 @@
 # @cherrystudio/mac-system-ocr
 
-> ⚠️ **IMPORTANT UPDATE NOTICE**: Version 1.0.0 includes critical fixes for electron-builder compatibility. Please update to the latest version:
+> ⚠️ **IMPORTANT UPDATE NOTICE**: Version 0.1.0 includes critical fixes for electron-builder compatibility. Please update to the latest version:
 > ```bash
 > npm install @cherrystudio/mac-system-ocr@latest
 > # or
