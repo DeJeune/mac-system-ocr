@@ -1,4 +1,4 @@
-const MacOCR = require('../lib');
+const MacOCR = require('../src/index.js');
 const path = require('path');
 
 async function demo() {
@@ -9,7 +9,7 @@ async function demo() {
     console.log(`Start processing: ${imagePath}`);
     console.log('Processing...');
 
-    const result = await MacOCR.recognize(imagePath, {
+    const result = await MacOCR.recognizeFromPath(imagePath, {
       recognitionLevel: 1, 
       minConfidence: 0.5
     });
