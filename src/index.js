@@ -1,4 +1,9 @@
-const { recognize, recognizeBatch, recognizeBuffer, recognizeBatchFromBuffer } = require('bindings')('mac_system_ocr');
+const { recognize, recognizeBatch, recognizeBuffer, recognizeBatchFromBuffer } = require('bindings')(
+  { 
+    bindings: 'mac_system_ocr' ,
+    module_root:require('../package.json').name
+  }
+);
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
