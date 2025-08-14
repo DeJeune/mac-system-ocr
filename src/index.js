@@ -1,7 +1,7 @@
 const { recognize, recognizeBatch, recognizeBuffer, recognizeBatchFromBuffer } = require('bindings')(
   { 
     bindings: 'mac_system_ocr' ,
-    module_root:require('../package.json').name
+    module_root: __dirname + '/..'
   }
 );
 const path = require('path');
