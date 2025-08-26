@@ -12,9 +12,24 @@ interface RecognizeBatchOptions {
   batchSize?: number;
 }
 
-interface OCRResult {
+interface TextObservation {
   text: string;
   confidence: number;
+  x: number;       // x coordinate from Vision Framework (0.0-1.0)
+  y: number;       // y coordinate from Vision Framework (0.0-1.0, bottom-left origin)
+  width: number;   // width from Vision Framework (0.0-1.0)
+  height: number;  // height from Vision Framework (0.0-1.0)
+}
+
+declare class OCRResult {
+  text: string;
+  confidence: number;
+
+  /**
+   * Get text observations with native macOS coordinates (bottom-left origin)
+   * Coordinates are exactly as returned by Vision Framework without any conversion
+   */
+  getObservations(): TextObservation[];
 }
 
 declare class MacOCR {
@@ -62,6 +77,6 @@ declare class MacOCR {
   ): Promise<OCRResult[]>;
 }
 
-export { RecognizeOptions, RecognizeBatchOptions, OCRResult };
+export { RecognizeOptions, RecognizeBatchOptions, OCRResult, TextObservation };
 
 export default MacOCR;

@@ -16,13 +16,29 @@ typedef enum {
 } OCRRecognitionLevel;
 
 /**
- * OCR result structure
+ * Text observation structure containing text and native macOS coordinates
+ * Coordinates are exactly as returned by Vision Framework without any conversion
+ * Uses bottom-left origin coordinate system (native macOS/Quartz)
+ */
+typedef struct {
+    const char* text;     // recognized text
+    double confidence;    // confidence for this text
+    double x;             // x coordinate from Vision Framework (0.0-1.0)
+    double y;             // y coordinate from Vision Framework (0.0-1.0, bottom-left origin)
+    double width;         // width from Vision Framework (0.0-1.0)
+    double height;        // height from Vision Framework (0.0-1.0)
+} TextObservation;
+
+/**
+ * OCR result structure with detailed observations
  * Note: All string fields are dynamically allocated and need to be freed using free_ocr_result
  */
 typedef struct {
     const char* error;    // error message, NULL if no error
     const char* text;     // recognized text, NULL if an error occurred
     double confidence;    // recognition confidence 0.0-1.0
+    TextObservation* observations;  // array of text observations (native macOS coordinates)
+    size_t observation_count;       // number of observations
 } OCRResult;
 
 /**

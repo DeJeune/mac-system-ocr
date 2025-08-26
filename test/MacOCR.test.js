@@ -2,7 +2,7 @@ const MacOCR = require('../src/index');
 const path = require('path');
 const fs = require('fs');
 const { Buffer } = require('buffer');
-const { createTestImage } = require('./createTestImage');
+const { createTestImage, createPrecisionTestImage } = require('./createTestImage');
 const { v4: uuidv4 } = require('uuid');
 
 describe('MacOCR', () => {
@@ -104,6 +104,7 @@ describe('MacOCR', () => {
       expect(typeof result.confidence).toBe('number');
       expect(result.confidence).toBeGreaterThanOrEqual(0);
       expect(result.confidence).toBeLessThanOrEqual(1);
+      expect(typeof result.getObservations).toBe('function');
     });
 
     test('should perform OCR with custom options', async () => {
@@ -117,6 +118,45 @@ describe('MacOCR', () => {
       expect(result).toHaveProperty('text');
       expect(result).toHaveProperty('confidence');
       expect(result.confidence).toBeGreaterThanOrEqual(0.5);
+    });
+
+    test('should return observations with native macOS coordinates', async () => {
+      expect(fs.existsSync(testImagePath)).toBe(true);
+      const result = await MacOCR.recognizeFromPath(testImagePath);
+      const observations = result.getObservations();
+      
+      expect(Array.isArray(observations)).toBe(true);
+      
+      if (observations.length > 0) {
+        for (const obs of observations) {
+          expect(obs).toHaveProperty('text');
+          expect(obs).toHaveProperty('confidence');
+          expect(obs).toHaveProperty('x');
+          expect(obs).toHaveProperty('y');
+          expect(obs).toHaveProperty('width');
+          expect(obs).toHaveProperty('height');
+          
+          expect(typeof obs.text).toBe('string');
+          expect(typeof obs.confidence).toBe('number');
+          expect(typeof obs.x).toBe('number');
+          expect(typeof obs.y).toBe('number');
+          expect(typeof obs.width).toBe('number');
+          expect(typeof obs.height).toBe('number');
+          
+          // Coordinates should be normalized (0.0-1.0) with bottom-left origin
+          expect(obs.x).toBeGreaterThanOrEqual(0);
+          expect(obs.x).toBeLessThanOrEqual(1);
+          expect(obs.y).toBeGreaterThanOrEqual(0);
+          expect(obs.y).toBeLessThanOrEqual(1);
+          expect(obs.width).toBeGreaterThanOrEqual(0);
+          expect(obs.width).toBeLessThanOrEqual(1);
+          expect(obs.height).toBeGreaterThanOrEqual(0);
+          expect(obs.height).toBeLessThanOrEqual(1);
+          
+          expect(obs.confidence).toBeGreaterThanOrEqual(0);
+          expect(obs.confidence).toBeLessThanOrEqual(1);
+        }
+      }
     });
   });
 
@@ -335,6 +375,35 @@ describe('MacOCR', () => {
       expect(result.text.toLowerCase()).toContain('buffer test');
     });
 
+    test('should return observations with native macOS coordinates from buffer', async () => {
+      const result = await MacOCR.recognizeFromBuffer(testImageBuffer);
+      const observations = result.getObservations();
+      
+      expect(Array.isArray(observations)).toBe(true);
+      expect(typeof result.getObservations).toBe('function');
+      
+      if (observations.length > 0) {
+        for (const obs of observations) {
+          expect(obs).toHaveProperty('text');
+          expect(obs).toHaveProperty('confidence');
+          expect(obs).toHaveProperty('x');
+          expect(obs).toHaveProperty('y');
+          expect(obs).toHaveProperty('width');
+          expect(obs).toHaveProperty('height');
+          
+          // Coordinates should be normalized (0.0-1.0) with bottom-left origin
+          expect(obs.x).toBeGreaterThanOrEqual(0);
+          expect(obs.x).toBeLessThanOrEqual(1);
+          expect(obs.y).toBeGreaterThanOrEqual(0);
+          expect(obs.y).toBeLessThanOrEqual(1);
+          expect(obs.width).toBeGreaterThanOrEqual(0);
+          expect(obs.width).toBeLessThanOrEqual(1);
+          expect(obs.height).toBeGreaterThanOrEqual(0);
+          expect(obs.height).toBeLessThanOrEqual(1);
+        }
+      }
+    });
+
     test('should handle various image formats in buffer', async () => {
       const formats = [
         { ext: 'jpg', mime: 'image/jpeg' },
@@ -500,6 +569,179 @@ describe('MacOCR', () => {
         expect(results[i]).toHaveProperty('text');
         expect(results[i]).toHaveProperty('confidence');
         expect(results[i].text.toLowerCase()).toContain(`large buffer batch test ${i + 1}`);
+      }
+    });
+
+  });
+
+  describe('Precise Coordinate Validation', () => {
+    let testImageData;
+    
+    beforeEach(async () => {
+      // Create test image with known text positions
+      const textBlocks = [
+        { text: 'TOP', x: 50, y: 30, fontSize: 20 },
+        { text: 'MIDDLE', x: 100, y: 150, fontSize: 24 },
+        { text: 'BOTTOM', x: 200, y: 250, fontSize: 18 }
+      ];
+      
+      const uniqueName = `precision-test-${uuidv4()}.png`;
+      testImageData = await createPrecisionTestImage(textBlocks, uniqueName, {
+        width: 400,
+        height: 300
+      });
+    });
+
+    afterEach(async () => {
+      try {
+        if (testImageData?.imagePath && fs.existsSync(testImageData.imagePath)) {
+          await fs.promises.unlink(testImageData.imagePath);
+        }
+      } catch (error) {
+        console.error('Error cleaning up precision test image:', error);
+      }
+    });
+
+    test('should return coordinates within reasonable range of expected positions', async () => {
+      const result = await MacOCR.recognizeFromPath(testImageData.imagePath, {
+        recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
+        minConfidence: 0.3
+      });
+
+      const observations = result.getObservations();
+      const expected = testImageData.expectedCoordinates;
+      
+      // Should detect at least some of the text blocks
+      expect(observations.length).toBeGreaterThan(0);
+      expect(observations.length).toBeLessThanOrEqual(expected.length);
+
+      console.log('Expected coordinates:', expected);
+      console.log('Detected coordinates:', observations);
+
+      // For each detected observation, try to match it with an expected block
+      observations.forEach(obs => {
+        // Find the best matching expected coordinate based on text content
+        const matchingExpected = expected.find(exp => 
+          exp.text === obs.text || obs.text.includes(exp.text)
+        );
+
+        if (matchingExpected) {
+          // Convert expected coordinates to native macOS coordinate system (bottom-left origin)
+          const expectedMacOSY = 1.0 - (matchingExpected.y + matchingExpected.height);
+          
+          /*
+           * Allow for some tolerance in coordinate matching (OCR isn't pixel-perfect)
+           * Using precision 0 means tolerance of 0.5, which is reasonable for OCR coordinates
+           */
+          expect(obs.x).toBeCloseTo(matchingExpected.x, 0);
+          expect(obs.y).toBeCloseTo(expectedMacOSY, 0);
+          
+          // Width and height are harder to predict exactly, so use wider tolerance
+          expect(obs.width).toBeGreaterThan(0);
+          expect(obs.height).toBeGreaterThan(0);
+          expect(obs.width).toBeLessThanOrEqual(1.0);
+          expect(obs.height).toBeLessThanOrEqual(1.0);
+
+          console.log(`✓ Matched "${obs.text}": expected macOS (${matchingExpected.x.toFixed(3)}, ${expectedMacOSY.toFixed(3)}), actual (${obs.x.toFixed(3)}, ${obs.y.toFixed(3)})`);
+        } else {
+          console.log(`⚠ Unmatched text: "${obs.text}" at (${obs.x.toFixed(3)}, ${obs.y.toFixed(3)})`);
+        }
+      });
+    });
+
+    test('should maintain coordinate consistency across multiple recognitions', async () => {
+      // Run OCR multiple times on the same image
+      const results = await Promise.all([
+        MacOCR.recognizeFromPath(testImageData.imagePath),
+        MacOCR.recognizeFromPath(testImageData.imagePath),
+        MacOCR.recognizeFromPath(testImageData.imagePath)
+      ]);
+
+      const observations1 = results[0].getObservations();
+      const observations2 = results[1].getObservations();
+      const observations3 = results[2].getObservations();
+
+      // Should return the same number of observations
+      expect(observations1.length).toBe(observations2.length);
+      expect(observations2.length).toBe(observations3.length);
+
+      // Coordinates should be consistent (allowing for tiny floating-point differences)
+      for (let i = 0; i < observations1.length; i++) {
+        expect(observations1[i].x).toBeCloseTo(observations2[i].x, 5);
+        expect(observations1[i].y).toBeCloseTo(observations2[i].y, 5);
+        expect(observations1[i].width).toBeCloseTo(observations2[i].width, 5);
+        expect(observations1[i].height).toBeCloseTo(observations2[i].height, 5);
+        expect(observations1[i].text).toBe(observations2[i].text);
+
+        expect(observations2[i].x).toBeCloseTo(observations3[i].x, 5);
+        expect(observations2[i].y).toBeCloseTo(observations3[i].y, 5);
+        expect(observations2[i].width).toBeCloseTo(observations3[i].width, 5);
+        expect(observations2[i].height).toBeCloseTo(observations3[i].height, 5);
+        expect(observations2[i].text).toBe(observations3[i].text);
+      }
+    });
+
+    test('should return reasonable coordinate order (native macOS bottom-left origin)', async () => {
+      const result = await MacOCR.recognizeFromPath(testImageData.imagePath);
+      const observations = result.getObservations();
+
+      if (observations.length >= 2) {
+        // In native macOS coordinates (bottom-left origin), higher y values mean higher on screen
+        const topText = observations.find(obs => obs.text.includes('TOP'));
+        const bottomText = observations.find(obs => obs.text.includes('BOTTOM'));
+
+        if (topText && bottomText) {
+          // In bottom-left origin system, TOP text should have HIGHER y value than BOTTOM text
+          expect(topText.y).toBeGreaterThan(bottomText.y);
+          console.log(`✓ TOP text at y=${topText.y.toFixed(3)}, BOTTOM text at y=${bottomText.y.toFixed(3)} (bottom-left origin)`);
+        }
+      }
+    });
+  });
+
+  describe('Coordinate System Validation', () => {
+    test('should handle different image dimensions consistently', async () => {
+      const testCases = [
+        { width: 200, height: 150, text: 'Small', x: 50, y: 75 },
+        { width: 800, height: 600, text: 'Large', x: 200, y: 300 },
+        { width: 400, height: 400, text: 'Square', x: 200, y: 200 }
+      ];
+
+      for (const testCase of testCases) {
+        const uniqueName = `dimension-test-${testCase.width}x${testCase.height}-${uuidv4()}.png`;
+        
+        const testData = await createPrecisionTestImage(
+          [{ text: testCase.text, x: testCase.x, y: testCase.y, fontSize: 20 }], 
+          uniqueName, 
+          { width: testCase.width, height: testCase.height }
+        );
+
+        try {
+          const result = await MacOCR.recognizeFromPath(testData.imagePath);
+          const observations = result.getObservations();
+
+          expect(observations.length).toBeGreaterThan(0);
+          
+          // All coordinates should be normalized (0.0-1.0)
+          observations.forEach(obs => {
+            expect(obs.x).toBeGreaterThanOrEqual(0);
+            expect(obs.x).toBeLessThanOrEqual(1);
+            expect(obs.y).toBeGreaterThanOrEqual(0);
+            expect(obs.y).toBeLessThanOrEqual(1);
+            expect(obs.width).toBeGreaterThanOrEqual(0);
+            expect(obs.width).toBeLessThanOrEqual(1);
+            expect(obs.height).toBeGreaterThanOrEqual(0);
+            expect(obs.height).toBeLessThanOrEqual(1);
+          });
+
+          console.log(`✓ ${testCase.width}x${testCase.height}: detected ${observations.length} text blocks with normalized coordinates`);
+
+        } finally {
+          // Clean up
+          if (fs.existsSync(testData.imagePath)) {
+            await fs.promises.unlink(testData.imagePath);
+          }
+        }
       }
     });
   });

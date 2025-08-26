@@ -18,7 +18,24 @@ async function demo() {
     console.log('----------------------------------------');
     console.log(result.text);
     console.log('----------------------------------------');
-    console.log(`Confidence: ${(result.confidence * 100).toFixed(2)}%`);
+    console.log(`Overall Confidence: ${(result.confidence * 100).toFixed(2)}%`);
+
+    // Demonstrate getObservations functionality
+    const observations = result.getObservations();
+    if (observations.length > 0) {
+      console.log('\nDetailed text observations with bounding boxes:');
+      console.log('========================================');
+      observations.forEach((obs, index) => {
+        console.log(`Text ${index + 1}: "${obs.text}"`);
+        console.log(`  Confidence: ${(obs.confidence * 100).toFixed(2)}%`);
+        console.log(`  Position: x=${obs.x.toFixed(3)}, y=${obs.y.toFixed(3)}`);
+        console.log(`  Size: width=${obs.width.toFixed(3)}, height=${obs.height.toFixed(3)}`);
+        console.log('  ----------------------------------------');
+      });
+      console.log(`Total text blocks detected: ${observations.length}`);
+    } else {
+      console.log('\nNo detailed observations available.');
+    }
 
   } catch (error) {
     console.error('Error:', error.message);

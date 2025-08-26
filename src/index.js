@@ -9,6 +9,23 @@ const fs = require('fs');
 const os = require('os');
 const { Buffer } = require('buffer');
 
+class OCRResult {
+  constructor(data) {
+    this.text = data.text;
+    this.confidence = data.confidence;
+    this._observations = data.observations || [];
+  }
+
+  /**
+   * Get text observations with native macOS coordinates (bottom-left origin)
+   * Coordinates are exactly as returned by Vision Framework without any conversion
+   * @returns {Array<{text: string, confidence: number, x: number, y: number, width: number, height: number}>}
+   */
+  getObservations() {
+    return this._observations;
+  }
+}
+
 // Check operating system requirements
 const platform = os.platform();
 const release = os.release();
@@ -79,7 +96,8 @@ class MacOCR {
     }
 
     try {
-      return await recognize(imagePath, normalizedOptions);
+      const result = await recognize(imagePath, normalizedOptions);
+      return new OCRResult(result);
     } catch (error) {
       throw new Error(`OCR failed: ${error.message}`);
     }
@@ -151,7 +169,7 @@ class MacOCR {
 
     try {
       const results = await recognizeBatch(imagePaths, normalizedOptions);
-      return results;
+      return results.map(result => new OCRResult(result));
     } catch (error) {
       throw new Error(`Batch OCR failed: ${error.message}`);
     }
@@ -193,7 +211,8 @@ class MacOCR {
     }
 
     try {
-      return await recognizeBuffer(buffer, normalizedOptions);
+      const result = await recognizeBuffer(buffer, normalizedOptions);
+      return new OCRResult(result);
     } catch (error) {
       if (error instanceof TypeError) {
         throw error;
@@ -260,7 +279,8 @@ class MacOCR {
 
     try {
       const buffers = imageBuffers.map(buffer => Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer));
-      return await recognizeBatchFromBuffer(buffers, normalizedOptions);
+      const results = await recognizeBatchFromBuffer(buffers, normalizedOptions);
+      return results.map(result => new OCRResult(result));
     } catch (error) {
       if (error instanceof TypeError) {
         throw error;

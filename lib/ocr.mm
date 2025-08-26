@@ -122,6 +122,8 @@ OCRResult* perform_ocr(CGImageRef image, const OCROptions* options) {
         result->error = NULL;
         result->text = NULL;
         result->confidence = 0.0;
+        result->observations = NULL;
+        result->observation_count = 0;
         
         const OCROptions* opts = options ? options : &DEFAULT_OPTIONS;
         
@@ -131,6 +133,7 @@ OCRResult* perform_ocr(CGImageRef image, const OCROptions* options) {
         }
         
         __block NSMutableString* recognizedText = [NSMutableString string];
+        __block NSMutableArray* textObservations = [NSMutableArray array];
         __block double totalConfidence = 0.0;
         __block int observationCount = 0;
         __block NSLock* resultLock = [[NSLock alloc] init];
@@ -157,8 +160,19 @@ OCRResult* perform_ocr(CGImageRef image, const OCROptions* options) {
                     if (bestCandidate) {
                         NSString* text = bestCandidate.string;
                         if (text.length > 0) {
+                            // Store observation data (native macOS coordinates, no conversion)
+                            CGRect boundingBox = observation.boundingBox;
+                            NSDictionary* obsData = @{
+                                @"text": text,
+                                @"confidence": @(bestCandidate.confidence),
+                                @"x": @(boundingBox.origin.x),
+                                @"y": @(boundingBox.origin.y),
+                                @"width": @(boundingBox.size.width),
+                                @"height": @(boundingBox.size.height)
+                            };
+                            [textObservations addObject:obsData];
+                            
                             if (recognizedText.length > 0) {
-                                CGRect boundingBox = observation.boundingBox;
                                 if (boundingBox.origin.y < 0.1) {
                                     [recognizedText appendString:@"\n"];
                                 } else {
@@ -224,6 +238,26 @@ OCRResult* perform_ocr(CGImageRef image, const OCROptions* options) {
                 result->text = strdup("");
             }
             result->confidence = totalConfidence / observationCount;
+            
+            // Allocate and populate observations array (native macOS coordinates)
+            result->observation_count = textObservations.count;
+            if (result->observation_count > 0) {
+                result->observations = (TextObservation*)malloc(sizeof(TextObservation) * result->observation_count);
+                if (result->observations) {
+                    for (size_t i = 0; i < result->observation_count; i++) {
+                        NSDictionary* obsData = textObservations[i];
+                        TextObservation* obs = &result->observations[i];
+                        
+                        NSString* text = obsData[@"text"];
+                        obs->text = strdup([text UTF8String]);
+                        obs->confidence = [obsData[@"confidence"] doubleValue];
+                        obs->x = [obsData[@"x"] doubleValue];
+                        obs->y = [obsData[@"y"] doubleValue];
+                        obs->width = [obsData[@"width"] doubleValue];
+                        obs->height = [obsData[@"height"] doubleValue];
+                    }
+                }
+            }
         } else {
             result->text = strdup("");
             if (!result->text) {
@@ -248,6 +282,16 @@ void free_ocr_result(OCRResult* result) {
     if (result->text) {
         free((void*)result->text);
         result->text = NULL;
+    }
+    
+    if (result->observations) {
+        for (size_t i = 0; i < result->observation_count; i++) {
+            if (result->observations[i].text) {
+                free((void*)result->observations[i].text);
+            }
+        }
+        free(result->observations);
+        result->observations = NULL;
     }
     
     free(result);

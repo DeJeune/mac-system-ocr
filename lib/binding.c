@@ -85,7 +85,7 @@ void CompleteOCR(napi_env env, napi_status status, void* data) {
     }
 
     else if (work->result) {
-        napi_value obj, text, confidence;
+        napi_value obj, text, confidence, observations;
         napi_create_object(env, &obj);
 
         if (work->result->text) {
@@ -98,6 +98,35 @@ void CompleteOCR(napi_env env, napi_status status, void* data) {
         
         napi_create_double(env, work->result->confidence, &confidence);
         napi_set_named_property(env, obj, "confidence", confidence);
+        
+        // Add observations array
+        if (work->result->observations && work->result->observation_count > 0) {
+            napi_create_array_with_length(env, work->result->observation_count, &observations);
+            for (size_t i = 0; i < work->result->observation_count; i++) {
+                TextObservation* obs = &work->result->observations[i];
+                napi_value obs_obj, obs_text, obs_confidence, obs_x, obs_y, obs_width, obs_height;
+                
+                napi_create_object(env, &obs_obj);
+                napi_create_string_utf8(env, obs->text, NAPI_AUTO_LENGTH, &obs_text);
+                napi_create_double(env, obs->confidence, &obs_confidence);
+                napi_create_double(env, obs->x, &obs_x);
+                napi_create_double(env, obs->y, &obs_y);
+                napi_create_double(env, obs->width, &obs_width);
+                napi_create_double(env, obs->height, &obs_height);
+                
+                napi_set_named_property(env, obs_obj, "text", obs_text);
+                napi_set_named_property(env, obs_obj, "confidence", obs_confidence);
+                napi_set_named_property(env, obs_obj, "x", obs_x);
+                napi_set_named_property(env, obs_obj, "y", obs_y);
+                napi_set_named_property(env, obs_obj, "width", obs_width);
+                napi_set_named_property(env, obs_obj, "height", obs_height);
+                
+                napi_set_element(env, observations, i, obs_obj);
+            }
+        } else {
+            napi_create_array_with_length(env, 0, &observations);
+        }
+        napi_set_named_property(env, obj, "observations", observations);
         
         napi_resolve_deferred(env, work->deferred, obj);
     }
@@ -576,7 +605,7 @@ void CompleteBufferOCR(napi_env env, napi_status status, void* data) {
         napi_reject_deferred(env, work->deferred, error);
     }
     else if (work->result) {
-        napi_value obj, text, confidence;
+        napi_value obj, text, confidence, observations;
         napi_create_object(env, &obj);
 
         if (work->result->text) {
@@ -589,6 +618,35 @@ void CompleteBufferOCR(napi_env env, napi_status status, void* data) {
         
         napi_create_double(env, work->result->confidence, &confidence);
         napi_set_named_property(env, obj, "confidence", confidence);
+        
+        // Add observations array
+        if (work->result->observations && work->result->observation_count > 0) {
+            napi_create_array_with_length(env, work->result->observation_count, &observations);
+            for (size_t i = 0; i < work->result->observation_count; i++) {
+                TextObservation* obs = &work->result->observations[i];
+                napi_value obs_obj, obs_text, obs_confidence, obs_x, obs_y, obs_width, obs_height;
+                
+                napi_create_object(env, &obs_obj);
+                napi_create_string_utf8(env, obs->text, NAPI_AUTO_LENGTH, &obs_text);
+                napi_create_double(env, obs->confidence, &obs_confidence);
+                napi_create_double(env, obs->x, &obs_x);
+                napi_create_double(env, obs->y, &obs_y);
+                napi_create_double(env, obs->width, &obs_width);
+                napi_create_double(env, obs->height, &obs_height);
+                
+                napi_set_named_property(env, obs_obj, "text", obs_text);
+                napi_set_named_property(env, obs_obj, "confidence", obs_confidence);
+                napi_set_named_property(env, obs_obj, "x", obs_x);
+                napi_set_named_property(env, obs_obj, "y", obs_y);
+                napi_set_named_property(env, obs_obj, "width", obs_width);
+                napi_set_named_property(env, obs_obj, "height", obs_height);
+                
+                napi_set_element(env, observations, i, obs_obj);
+            }
+        } else {
+            napi_create_array_with_length(env, 0, &observations);
+        }
+        napi_set_named_property(env, obj, "observations", observations);
         
         napi_resolve_deferred(env, work->deferred, obj);
     }
