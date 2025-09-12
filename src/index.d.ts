@@ -26,10 +26,10 @@ declare class OCRResult {
   confidence: number;
 
   /**
-   * Get text observations with native macOS coordinates (bottom-left origin)
+   * Text observations with native macOS coordinates (bottom-left origin)
    * Coordinates are exactly as returned by Vision Framework without any conversion
    */
-  getObservations(): TextObservation[];
+  observations: TextObservation[];
 }
 
 declare class MacOCR {
