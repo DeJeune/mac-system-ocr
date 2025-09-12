@@ -342,7 +342,7 @@ void CompleteBatchOCR(napi_env env, napi_status status, void* data) {
             OCRResult* result = work->result->results[i];
             
             
-            napi_value obj, text, confidence;
+            napi_value obj, text, confidence, observations;
             napi_create_object(env, &obj);
 
             if (result && result->text) {
@@ -359,6 +359,35 @@ void CompleteBatchOCR(napi_env env, napi_status status, void* data) {
                 napi_create_double(env, 0.0, &confidence);
             }
             napi_set_named_property(env, obj, "confidence", confidence);
+
+            // Add observations array
+            if (result && result->observations && result->observation_count > 0) {
+                napi_create_array_with_length(env, result->observation_count, &observations);
+                for (size_t j = 0; j < result->observation_count; j++) {
+                    TextObservation* obs = &result->observations[j];
+                    napi_value obs_obj, obs_text, obs_confidence, obs_x, obs_y, obs_width, obs_height;
+                    
+                    napi_create_object(env, &obs_obj);
+                    napi_create_string_utf8(env, obs->text, NAPI_AUTO_LENGTH, &obs_text);
+                    napi_create_double(env, obs->confidence, &obs_confidence);
+                    napi_create_double(env, obs->x, &obs_x);
+                    napi_create_double(env, obs->y, &obs_y);
+                    napi_create_double(env, obs->width, &obs_width);
+                    napi_create_double(env, obs->height, &obs_height);
+                    
+                    napi_set_named_property(env, obs_obj, "text", obs_text);
+                    napi_set_named_property(env, obs_obj, "confidence", obs_confidence);
+                    napi_set_named_property(env, obs_obj, "x", obs_x);
+                    napi_set_named_property(env, obs_obj, "y", obs_y);
+                    napi_set_named_property(env, obs_obj, "width", obs_width);
+                    napi_set_named_property(env, obs_obj, "height", obs_height);
+                    
+                    napi_set_element(env, observations, j, obs_obj);
+                }
+            } else {
+                napi_create_array_with_length(env, 0, &observations);
+            }
+            napi_set_named_property(env, obj, "observations", observations);
 
             napi_set_element(env, results_array, i, obj);
         }
@@ -806,7 +835,7 @@ void CompleteBatchBufferOCR(napi_env env, napi_status status, void* data) {
         for (size_t i = 0; i < work->result->count; i++) {
             OCRResult* result = work->result->results[i];
             
-            napi_value obj, text, confidence;
+            napi_value obj, text, confidence, observations;
             napi_create_object(env, &obj);
 
             if (result && result->text) {
@@ -822,6 +851,35 @@ void CompleteBatchBufferOCR(napi_env env, napi_status status, void* data) {
                 napi_create_double(env, 0.0, &confidence);
             }
             napi_set_named_property(env, obj, "confidence", confidence);
+
+            // Add observations array
+            if (result && result->observations && result->observation_count > 0) {
+                napi_create_array_with_length(env, result->observation_count, &observations);
+                for (size_t j = 0; j < result->observation_count; j++) {
+                    TextObservation* obs = &result->observations[j];
+                    napi_value obs_obj, obs_text, obs_confidence, obs_x, obs_y, obs_width, obs_height;
+                    
+                    napi_create_object(env, &obs_obj);
+                    napi_create_string_utf8(env, obs->text, NAPI_AUTO_LENGTH, &obs_text);
+                    napi_create_double(env, obs->confidence, &obs_confidence);
+                    napi_create_double(env, obs->x, &obs_x);
+                    napi_create_double(env, obs->y, &obs_y);
+                    napi_create_double(env, obs->width, &obs_width);
+                    napi_create_double(env, obs->height, &obs_height);
+                    
+                    napi_set_named_property(env, obs_obj, "text", obs_text);
+                    napi_set_named_property(env, obs_obj, "confidence", obs_confidence);
+                    napi_set_named_property(env, obs_obj, "x", obs_x);
+                    napi_set_named_property(env, obs_obj, "y", obs_y);
+                    napi_set_named_property(env, obs_obj, "width", obs_width);
+                    napi_set_named_property(env, obs_obj, "height", obs_height);
+                    
+                    napi_set_element(env, observations, j, obs_obj);
+                }
+            } else {
+                napi_create_array_with_length(env, 0, &observations);
+            }
+            napi_set_named_property(env, obj, "observations", observations);
 
             napi_set_element(env, results_array, i, obj);
         }

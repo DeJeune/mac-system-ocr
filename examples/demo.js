@@ -20,8 +20,7 @@ async function demo() {
     console.log('----------------------------------------');
     console.log(`Overall Confidence: ${(result.confidence * 100).toFixed(2)}%`);
 
-    // Demonstrate getObservations functionality
-    const observations = result.getObservations();
+    const observations = result.observations;
     if (observations.length > 0) {
       console.log('\nDetailed text observations with bounding boxes:');
       console.log('========================================');
