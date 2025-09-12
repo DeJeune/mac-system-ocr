@@ -113,7 +113,7 @@ describe('MacOCR', () => {
       expect(typeof result.confidence).toBe('number');
       expect(result.confidence).toBeGreaterThanOrEqual(0);
       expect(result.confidence).toBeLessThanOrEqual(1);
-      expect(typeof result.getObservations).toBe('function');
+      expect(Array.isArray(result.observations)).toBe(true);
     });
 
     test('should perform OCR with custom options', async () => {
@@ -132,7 +132,7 @@ describe('MacOCR', () => {
     test('should return observations with native macOS coordinates', async () => {
       expect(fs.existsSync(testImagePath)).toBe(true);
       const result = await MacOCR.recognizeFromPath(testImagePath);
-      const observations = result.getObservations();
+      const observations = result.observations;
 
       expect(Array.isArray(observations)).toBe(true);
 
@@ -234,10 +234,10 @@ describe('MacOCR', () => {
         expect(results[i].text.toLowerCase()).toContain(`batch test ${i + 1}`);
 
         // Test observations functionality
-        expect(results[i]).toHaveProperty('getObservations');
-        expect(typeof results[i].getObservations).toBe('function');
+        expect(results[i]).toHaveProperty('observations');
+        expect(Array.isArray(results[i].observations)).toBe(true);
 
-        const observations = results[i].getObservations();
+        const observations = results[i].observations;
         expect(Array.isArray(observations)).toBe(true);
 
         // If there are observations, validate their structure
@@ -351,9 +351,9 @@ describe('MacOCR', () => {
 
         // Verify OCRResult structure
         expect(result).toBeInstanceOf(MacOCR.OCRResult || Object);
-        expect(result).toHaveProperty('getObservations');
+        expect(result).toHaveProperty('observations');
 
-        const observations = result.getObservations();
+        const observations = result.observations;
         expect(Array.isArray(observations)).toBe(true);
 
         if (observations.length > 0) {
@@ -492,10 +492,10 @@ describe('MacOCR', () => {
 
     test('should return observations with native macOS coordinates from buffer', async () => {
       const result = await MacOCR.recognizeFromBuffer(testImageBuffer);
-      const observations = result.getObservations();
+      const observations = result.observations;
 
       expect(Array.isArray(observations)).toBe(true);
-      expect(typeof result.getObservations).toBe('function');
+      expect(Array.isArray(result.observations)).toBe(true);
 
       if (observations.length > 0) {
         for (const obs of observations) {
@@ -627,10 +627,10 @@ describe('MacOCR', () => {
         expect(results[i].text.toLowerCase()).toContain(`buffer batch test ${i + 1}`);
 
         // Test observations functionality
-        expect(results[i]).toHaveProperty('getObservations');
-        expect(typeof results[i].getObservations).toBe('function');
+        expect(results[i]).toHaveProperty('observations');
+        expect(Array.isArray(results[i].observations)).toBe(true);
 
-        const observations = results[i].getObservations();
+        const observations = results[i].observations;
         expect(Array.isArray(observations)).toBe(true);
 
         // If there are observations, validate their structure
@@ -735,9 +735,9 @@ describe('MacOCR', () => {
 
         // Verify OCRResult structure
         expect(result).toBeInstanceOf(MacOCR.OCRResult || Object);
-        expect(result).toHaveProperty('getObservations');
+        expect(result).toHaveProperty('observations');
 
-        const observations = result.getObservations();
+        const observations = result.observations;
         expect(Array.isArray(observations)).toBe(true);
 
         if (observations.length > 0) {
@@ -807,7 +807,7 @@ describe('MacOCR', () => {
         minConfidence: 0.3,
       });
 
-      const observations = result.getObservations();
+      const observations = result.observations;
       const expected = testImageData.expectedCoordinates;
 
       // Should detect at least some of the text blocks
@@ -860,9 +860,9 @@ describe('MacOCR', () => {
         MacOCR.recognizeFromPath(testImageData.imagePath),
       ]);
 
-      const observations1 = results[0].getObservations();
-      const observations2 = results[1].getObservations();
-      const observations3 = results[2].getObservations();
+      const observations1 = results[0].observations;
+      const observations2 = results[1].observations;
+      const observations3 = results[2].observations;
 
       // Should return the same number of observations
       expect(observations1.length).toBe(observations2.length);
@@ -886,7 +886,7 @@ describe('MacOCR', () => {
 
     test('should return reasonable coordinate order (native macOS bottom-left origin)', async () => {
       const result = await MacOCR.recognizeFromPath(testImageData.imagePath);
-      const observations = result.getObservations();
+      const observations = result.observations;
 
       if (observations.length >= 2) {
         // In native macOS coordinates (bottom-left origin), higher y values mean higher on screen
@@ -923,7 +923,7 @@ describe('MacOCR', () => {
 
         try {
           const result = await MacOCR.recognizeFromPath(testData.imagePath);
-          const observations = result.getObservations();
+          const observations = result.observations;
 
           expect(observations.length).toBeGreaterThan(0);
 

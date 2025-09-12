@@ -71,7 +71,7 @@ async function recognizeWithBoundingBoxes() {
   console.log('Text:', result.text);
   
   // Get observations with native macOS coordinates (bottom-left origin)
-  const observations = result.getObservations();
+  const observations = result.observations;
   observations.forEach((obs, index) => {
     console.log(`Text ${index + 1}: "${obs.text}"`);
     console.log(`  Position: (${obs.x}, ${obs.y}) - bottom-left origin`);
@@ -110,10 +110,10 @@ class OCRResult {
   confidence: number;  // Overall confidence score (0.0-1.0)
   
   /**
-   * Get text observations with native macOS coordinates (bottom-left origin)
+   * Text observations with native macOS coordinates (bottom-left origin)
    * Coordinates are exactly as returned by Vision Framework without any conversion
    */
-  getObservations(): TextObservation[];
+  observations: TextObservation[];
 }
 
 interface TextObservation {
@@ -128,7 +128,7 @@ interface TextObservation {
 
 #### Coordinate System
 
-**Native macOS Coordinates (`getObservations()`)**:
+**Native macOS Coordinates (`.observations`)**:
 - All coordinates are normalized to the range 0.0-1.0
 - Uses **bottom-left origin** (0,0 = bottom-left corner of image) - native macOS/Quartz coordinate system
 - `x`, `y`: Position in native macOS coordinate system
@@ -204,7 +204,7 @@ import { MacOCR } from '@cherrystudio/mac-system-ocr';
 const result = await MacOCR.recognizeFromPath('image-with-text.png');
 
 // Get observations with native macOS coordinates
-const observations = result.getObservations();
+const observations = result.observations;
 
 observations.forEach((obs, index) => {
   console.log(`Text block ${index + 1}:`);
@@ -222,7 +222,7 @@ import { MacOCR } from '@cherrystudio/mac-system-ocr';
 
 async function drawTextBoundingBoxes(imagePath: string, imageWidth: number, imageHeight: number) {
   const result = await MacOCR.recognizeFromPath(imagePath);
-  const observations = result.getObservations();
+  const observations = result.observations;
 
   // Convert native macOS coordinates to pixel coordinates
   observations.forEach(obs => {
@@ -232,13 +232,13 @@ async function drawTextBoundingBoxes(imagePath: string, imageWidth: number, imag
       width: Math.round(obs.width * imageWidth),
       height: Math.round(obs.height * imageHeight)
     };
-    
+
     // For drawing libraries that use top-left origin, you may need to convert:
     // const topLeftY = imageHeight - pixelCoords.y - pixelCoords.height;
-    
+
     // Draw bounding box using your preferred graphics library
     drawRectangle(pixelCoords.x, pixelCoords.y, pixelCoords.width, pixelCoords.height);
-    
+
     // Add text label
     drawText(obs.text, pixelCoords.x, pixelCoords.y - 5);
   });
@@ -257,7 +257,7 @@ const result = await MacOCR.recognizeFromBuffer(imageBuffer);
 console.log('Recognized text:', result.text);
 
 // Get observations with coordinates
-const observations = result.getObservations();
+const observations = result.observations;
 console.log(`Found ${observations.length} text blocks`);
 ```
 

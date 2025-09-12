@@ -13,16 +13,7 @@ class OCRResult {
   constructor(data) {
     this.text = data.text;
     this.confidence = data.confidence;
-    this._observations = data.observations || [];
-  }
-
-  /**
-   * Get text observations with native macOS coordinates (bottom-left origin)
-   * Coordinates are exactly as returned by Vision Framework without any conversion
-   * @returns {Array<{text: string, confidence: number, x: number, y: number, width: number, height: number}>}
-   */
-  getObservations() {
-    return this._observations;
+    this.observations = data.observations || [];
   }
 }
 
