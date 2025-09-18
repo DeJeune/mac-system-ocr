@@ -26,7 +26,7 @@ A high-performance OCR (Optical Character Recognition) Node.js native module pow
 ## Requirements
 
 - macOS 10.15 or later
-- Node.js 23.0.0 or later (maybe support former version, but not tested)
+- Node.js 18.0.0 or later
 - Xcode Command Line Tools
 
 ## Installation
@@ -67,9 +67,9 @@ async function recognizeWithBoundingBoxes() {
     recognitionLevel: MacOCR.RECOGNITION_LEVEL_ACCURATE,
     minConfidence: 0.5,
   });
-  
+
   console.log('Text:', result.text);
-  
+
   // Get observations with native macOS coordinates (bottom-left origin)
   const observations = result.observations;
   observations.forEach((obs, index) => {
@@ -108,7 +108,7 @@ interface RecognizeOptions {
 class OCRResult {
   text: string;        // Combined recognized text
   confidence: number;  // Overall confidence score (0.0-1.0)
-  
+
   /**
    * Text observations with native macOS coordinates (bottom-left origin)
    * Coordinates are exactly as returned by Vision Framework without any conversion

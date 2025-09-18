@@ -1,68 +1,68 @@
 {
-    "name": "@cherrystudio/mac-system-ocr",
-    "version": "0.2.5",
-    "description": "Node.js N-API native module for MacOS Vision Framework OCR",
-    "main": "src/index.js",
-    "types": "src/index.d.ts",
-    "os": [
-        "darwin"
-    ],
-    "files": [
-        "src/**/*",
-        "binding.gyp",
-        "lib/**/*"
-    ],
-    "scripts": {
-        "install": "node-gyp rebuild",
-        "build": "node-gyp rebuild",
-        "clean": "node-gyp clean",
-        "pretest": "npm run build",
-        "test": "jest",
-        "test:watch": "jest --watch",
-        "prepublish": "npm run build && npm test",
-        "lint": "eslint .",
-        "lint:fix": "eslint . --fix",
-        "format": "prettier --write \"**/*.js\""
-    },
-    "keywords": [
-        "ocr",
-        "vision",
-        "macos",
-        "text-recognition",
-        "native-module",
-        "vision-framework"
-    ],
-    "author": "DeJeune",
-    "license": "MIT",
-    "gypfile": true,
-    "engines": {
-        "node": ">=22.0.0 <24.0.0",
-        "os": "darwin"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/DeJeune/mac-system-ocr.git"
-    },
-    "bugs": {
-        "url": "https://github.com/DeJeune/mac-system-ocr/issues"
-    },
-    "homepage": "https://github.com/DeJeune/mac-system-ocr#readme",
-    "dependencies": {
-        "bindings": "^1.5.0",
-        "node-api-headers": "^1.0.1"
-    },
-    "devDependencies": {
-        "@eslint/js": "^8.57.0",
-        "@types/node": "^22.13.13",
-        "eslint": "^8.57.0",
-        "eslint-config-prettier": "^9.1.0",
-        "eslint-plugin-node": "^11.1.0",
-        "jest": "^29.7.0",
-        "node-gyp": "^10.0.1",
-        "prettier": "^3.2.5",
-        "sharp": "^0.33.5",
-        "typescript": "^5.8.2",
-        "uuid": "^11.1.0"
-    },
-    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+	"name": "@cherrystudio/mac-system-ocr",
+	"version": "0.2.5",
+	"description": "Node.js N-API native module for MacOS Vision Framework OCR",
+	"main": "src/index.js",
+	"types": "src/index.d.ts",
+	"os": [
+		"darwin"
+	],
+	"files": [
+		"src/**/*",
+		"binding.gyp",
+		"lib/**/*"
+	],
+	"scripts": {
+		"install": "node-gyp rebuild",
+		"build": "node-gyp rebuild",
+		"clean": "node-gyp clean",
+		"pretest": "npm run build",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"prepublish": "npm run build && npm test",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write \"**/*.js\""
+	},
+	"keywords": [
+		"ocr",
+		"vision",
+		"macos",
+		"text-recognition",
+		"native-module",
+		"vision-framework"
+	],
+	"author": "DeJeune",
+	"license": "MIT",
+	"gypfile": true,
+	"engines": {
+		"node": ">=18.0.0 <24.0.0",
+		"os": "darwin"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DeJeune/mac-system-ocr.git"
+	},
+	"bugs": {
+		"url": "https://github.com/DeJeune/mac-system-ocr/issues"
+	},
+	"homepage": "https://github.com/DeJeune/mac-system-ocr#readme",
+	"dependencies": {
+		"bindings": "^1.5.0",
+		"node-api-headers": "^1.0.1"
+	},
+	"devDependencies": {
+		"@eslint/js": "^8.57.0",
+		"@types/node": "^22.13.13",
+		"eslint": "^8.57.0",
+		"eslint-config-prettier": "^9.1.0",
+		"eslint-plugin-node": "^11.1.0",
+		"jest": "^29.7.0",
+		"node-gyp": "^10.0.1",
+		"prettier": "^3.2.5",
+		"sharp": "^0.33.5",
+		"typescript": "^5.8.2",
+		"uuid": "^11.1.0"
+	},
+	"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
