@@ -56,7 +56,7 @@ class MacOCR {
     }
 
     const ext = path.extname(imagePath).toLowerCase();
-    const validExts = ['.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', 'webp'];
+    const validExts = ['.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.webp'];
     if (!validExts.includes(ext)) {
       throw new Error(`Unsupported image format: ${ext}`);
     }

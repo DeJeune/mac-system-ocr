@@ -25,7 +25,7 @@ static BOOL isValidImageExtension(NSString* extension) {
     static NSSet* validExtensions = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        validExtensions = [NSSet setWithArray:@[@"jpg", @"jpeg", @"png", @"tiff", @"gif"]];
+        validExtensions = [NSSet setWithArray:@[@"jpg", @"jpeg", @"png", @"tiff", @"gif", @"bmp", @"webp"]];
     });
     return [validExtensions containsObject:extension.lowercaseString];
 }
