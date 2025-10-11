@@ -380,18 +380,18 @@ describe('MacOCR', () => {
 
           // Test that observations are sorted or at least in reasonable order
           if (observations.length > 1) {
-            let hasValidOrder = true;
             for (let j = 1; j < observations.length; j++) {
               const prevObs = observations[j - 1];
               const currObs = observations[j];
 
-              // In native macOS coordinates, higher y values are towards the top
-              // So we expect text to generally flow from top to bottom (higher y to lower y)
-              // But we'll be lenient since text can be on the same line
+              /*
+               * In native macOS coordinates, higher y values are towards the top
+               * So we expect text to generally flow from top to bottom (higher y to lower y)
+               * But we'll be lenient since text can be on the same line
+               */
               if (Math.abs(prevObs.y - currObs.y) > 0.1) {
                 // If y difference is significant, previous should be higher (larger y)
                 if (prevObs.y < currObs.y - 0.1) {
-                  hasValidOrder = false;
                   break;
                 }
               }
