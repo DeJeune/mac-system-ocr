@@ -25,7 +25,7 @@ static BOOL isValidImageExtension(NSString* extension) {
     static NSSet* validExtensions = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        validExtensions = [NSSet setWithArray:@[@"jpg", @"jpeg", @"png", @"tiff", @"gif"]];
+        validExtensions = [NSSet setWithArray:@[@"jpg", @"jpeg", @"png", @"tiff", @"gif", @"bmp", @"webp"]];
     });
     return [validExtensions containsObject:extension.lowercaseString];
 }
@@ -369,6 +369,7 @@ OCRBatchResult* perform_batch_ocr(const char** image_paths, size_t count, const 
                         result->confidence = 0.0;
                         batch_result->results[current_index] = result;
                         atomic_failed_count->fetch_add(1, std::memory_order_relaxed);
+                        dispatch_semaphore_signal(sema);
                         return;
                     }
 
