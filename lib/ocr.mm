@@ -377,11 +377,11 @@ OCRBatchResult* perform_batch_ocr(const char** image_paths, size_t count, const 
 
                     CGImageRelease(image);
 
-                    batch_result->results[current_index] = result;
-
                     if (result && result->error) {
                         atomic_failed_count->fetch_add(1, std::memory_order_relaxed);
                     }
+
+                    batch_result->results[current_index] = result;
                     
                     dispatch_semaphore_signal(sema);
                 }
@@ -456,11 +456,11 @@ OCRBatchResult* perform_batch_ocr_from_buffers(const void** buffers, const size_
 
                     CGImageRelease(image);
 
-                    batch_result->results[current_index] = result;
-
                     if (result && result->error) {
                         atomic_failed_count->fetch_add(1, std::memory_order_relaxed);
                     }
+
+                    batch_result->results[current_index] = result;
                     
                     dispatch_semaphore_signal(sema);
                 }

@@ -52,6 +52,8 @@ function createTestImage(text, filename, options = {}) {
             return image.jpeg({ quality: 100 }).toFile(testImagePath).then(() => testImagePath);
         case 'gif':
             return image.gif().toFile(testImagePath).then(() => testImagePath);
+        case 'webp':
+            return image.webp({ quality: 100 }).toFile(testImagePath).then(() => testImagePath);
         default:
             return image.png({ quality: 100, compressionLevel: 1 }).toFile(testImagePath).then(() => testImagePath);
     }
@@ -125,7 +127,66 @@ function createPrecisionTestImage(textBlocks, filename, options = {}) {
         .then(() => ({ imagePath: testImagePath, expectedCoordinates }));
 }
 
+/**
+ * 创建WebP格式的测试图片，支持不同的WebP选项
+ * @param {string} text - 要渲染的文本
+ * @param {string} filename - 输出文件名
+ * @param {Object} [options] - WebP选项
+ * @param {number} [options.width=300] - 图片宽度
+ * @param {number} [options.height=150] - 图片高度
+ * @param {number} [options.fontSize=24] - 字体大小
+ * @param {number} [options.quality=80] - WebP质量 (1-100)
+ * @param {boolean} [options.lossless=false] - 是否使用无损压缩
+ * @param {number} [options.alphaQuality=100] - 透明度质量
+ * @param {Object} [options.background] - 背景色
+ * @returns {Promise<string>} 图片文件路径
+ */
+function createWebpTestImage(text, filename, options = {}) {
+    const width = options.width || 300;
+    const height = options.height || 150;
+    const fontSize = options.fontSize || 24;
+    const background = options.background || { r: 255, g: 255, b: 255, alpha: 1 };
+    const left = options.left !== undefined ? options.left : Math.floor(width / 10);
+    const top = options.top !== undefined ? options.top : Math.floor(height / 3);
+    const testImagePath = path.join(__dirname, 'fixtures', filename);
+
+    // WebP选项
+    const webpOptions = {
+        quality: options.quality !== undefined ? options.quality : 80,
+        lossless: options.lossless || false,
+        alphaQuality: options.alphaQuality !== undefined ? options.alphaQuality : 100
+    };
+
+    const image = sharp({
+        create: {
+            width: width,
+            height: height,
+            channels: 4,
+            background: background
+        }
+    });
+
+    // 如果有文本，添加文本层
+    if (text && text.trim() !== '') {
+        image.composite([{
+            input: {
+                text: {
+                    text: text,
+                    font: 'sans-serif',
+                    fontSize: fontSize,
+                    rgba: true
+                }
+            },
+            top: top,
+            left: left
+        }]);
+    }
+
+    return image.webp(webpOptions).toFile(testImagePath).then(() => testImagePath);
+}
+
 module.exports = {
     createTestImage,
-    createPrecisionTestImage
+    createPrecisionTestImage,
+    createWebpTestImage
 }
