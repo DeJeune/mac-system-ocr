@@ -15,6 +15,7 @@ module.exports = [
                 '__dirname': 'readonly',
                 'module': 'readonly',
                 'require': 'readonly',
+                'Buffer': 'readonly',
                 // Jest globals
                 'describe': 'readonly',
                 'test': 'readonly',
