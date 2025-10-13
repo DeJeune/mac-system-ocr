@@ -2,7 +2,7 @@ const MacOCR = require('../src/index');
 const path = require('path');
 const fs = require('fs');
 const { Buffer } = require('buffer');
-const { createTestImage, createPrecisionTestImage } = require('./createTestImage');
+const { createTestImage, createPrecisionTestImage, createWebpTestImage } = require('./createTestImage');
 const { v4: uuidv4 } = require('uuid');
 
 describe('MacOCR', () => {
@@ -946,6 +946,68 @@ describe('MacOCR', () => {
           // Clean up
           if (fs.existsSync(testData.imagePath)) {
             await fs.promises.unlink(testData.imagePath);
+          }
+        }
+      }
+    });
+  });
+
+  describe('WebP Format Integration', () => {
+    test('should handle WebP format in recognizeFromPath', async () => {
+      const testText = 'WebP Integration Test';
+      const filename = `integration-webp-${uuidv4()}.webp`;
+      const webpPath = await createWebpTestImage(testText, filename, {
+        quality: 90
+      });
+
+      try {
+        const result = await MacOCR.recognizeFromPath(webpPath);
+        
+        expect(result).toBeDefined();
+        expect(result.text).toBeDefined();
+        expect(result.text.toLowerCase()).toContain(testText.toLowerCase());
+        expect(result.confidence).toBeGreaterThan(0);
+        expect(result.observations).toBeDefined();
+        expect(result.observations.length).toBeGreaterThan(0);
+      } finally {
+        // 清理测试文件
+        if (fs.existsSync(webpPath)) {
+          await fs.promises.unlink(webpPath);
+        }
+      }
+    });
+
+    test('should handle WebP format in batch processing', async () => {
+      const testTexts = ['WebP Batch A', 'WebP Batch B'];
+      const webpPaths = [];
+
+      try {
+        // 创建WebP测试文件
+        for (let i = 0; i < testTexts.length; i++) {
+          const filename = `batch-integration-webp-${i}-${uuidv4()}.webp`;
+          const webpPath = await createWebpTestImage(testTexts[i], filename, {
+            quality: 85
+          });
+          webpPaths.push(webpPath);
+        }
+
+        const results = await MacOCR.recognizeBatchFromPath(webpPaths);
+        
+        expect(results).toBeDefined();
+        expect(results).toHaveLength(testTexts.length);
+
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          expect(result).toBeDefined();
+          expect(result.text).toBeDefined();
+          expect(result.text.toLowerCase()).toContain(testTexts[i].toLowerCase());
+          expect(result.confidence).toBeGreaterThan(0);
+        }
+      } finally {
+        // 清理测试文件
+        for (const webpPath of webpPaths) {
+          if (fs.existsSync(webpPath)) {
+            await fs.promises.unlink(webpPath);
           }
         }
       }
